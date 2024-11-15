@@ -160,7 +160,7 @@ func (p *RegexParser) parseG() (RExpr, error) {
 			return nil, err
 		}
 		p.consumeIf(')')
-		return NewGrouping(e), nil
+		return e, nil
 	}
 
 	if b, ok := p.consumeIf(p.grammar.FirstSet['G']...); ok {
