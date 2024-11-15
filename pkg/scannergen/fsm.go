@@ -96,7 +96,7 @@ func MakeMermaid(rootState State) string {
 func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAState, id uint) (*NFAState, *NFAState, map[uint]*NFAState, uint, error) {
 
 	switch rootNode := regexASTRootNode.(type) {
-	case Concatenation:
+	case *Concatenation:
 		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("concatination left node: %w", err)
@@ -108,7 +108,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 
 		lNFALastState.transitions[epsilon] = append(lNFALastState.transitions[epsilon], rNFAState)
 		return lNFAState, rNFALastState, idToState, id, nil
-	case Alternation:
+	case *Alternation:
 		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("alternation left node: %w", err)
@@ -138,7 +138,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		rNFALastState.transitions[epsilon] = append(rNFALastState.transitions[epsilon], end)
 
 		return start, end, idToState, id, nil
-	case KleeneStar:
+	case *KleeneStar:
 		NFAStartState, NFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("kleene star child node: %w", err)
@@ -166,7 +166,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		start.transitions[epsilon] = append(start.transitions[epsilon], end)
 
 		return start, end, idToState, id, nil
-	case Const:
+	case *Const:
 		start := &NFAState{
 			transitions: make(map[byte][]*NFAState),
 			id:          id,
