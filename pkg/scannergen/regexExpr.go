@@ -107,26 +107,3 @@ func (ks *KleeneStar) PrintNode(indent string) string {
 	}
 	return fmt.Sprintf("%sERROR PRINTING KLEENE_STAR", indent)
 }
-
-type Grouping struct { // (left)
-	left RExpr
-}
-
-func NewGrouping(left RExpr) *Grouping {
-	return &Grouping{left: left}
-}
-
-func (g *Grouping) String() string {
-	return fmt.Sprintf("(%s)", g.left)
-}
-
-func (g *Grouping) PrintNode(indent string) string {
-	if left, ok := g.left.(ASTPrinter); ok {
-		return fmt.Sprintf(
-			"%sGrouping {\n%v\n%s}",
-			indent, left.PrintNode(indent+"  "),
-			indent,
-		)
-	}
-	return fmt.Sprintf("%sERROR PRINTING GROUPING", indent)
-}
