@@ -13,8 +13,16 @@ L: leftmost derivation of the input string
 1: at most one symbol lookahead used
 */
 
+//TODO: use this
+//type NonTerminal struct {
+//	nt         byte
+//	production string
+//	firstSet   []byte
+//	followSet  []byte
+//}
+
 type LL1Grammar struct {
-	Rules        map[byte][]string //Rules can be an object
+	Rules        map[byte][]string
 	terminals    []byte
 	nonTerminals []byte
 	FirstSet     map[byte][]byte
@@ -24,11 +32,8 @@ type LL1Grammar struct {
 const (
 	Epsilon    = ""
 	endOfInput = '$'
-	//	ValidInt           = "0123456789" TODO: uncomment
-	//	ValidLowercaseChar = "abcdefghijklmnopqrstuvwxyz" //TODO: combine into one
-	ValidCapitalChar   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	ValidInt           = "0"
-	ValidLowercaseChar = "a"
+	ValidInt   = "0123456789" // TODO: uncomment
+	ValidChar  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 // TODO: see below, make it so that you don't have to specify terminals and nonTerminals
@@ -54,8 +59,8 @@ func NewLL1Grammar(Rules map[byte][]string, terminals []byte, nonTerminals []byt
 	//	for _, r := range rules {
 	//		if r == ValidInt {
 	//			terminals = append(terminals, ValidInt...)
-	//		} else if r == ValidLowercaseChar {
-	//			terminals = append(terminals, ValidLowercaseChar...)
+	//		} else if r == ValidChar {
+	//			terminals = append(terminals, ValidChar...)
 	//		} else {
 	//			for _, b := range []byte(r) {
 	//				if !slices.Contains(nonTerminals, b) {
@@ -91,9 +96,9 @@ func (g *LL1Grammar) generateFirstSet(startRName byte, rName byte) {
 		//if the rule is an epsilon or a valid character or int, add it to FIRST(rName)
 		if r == Epsilon {
 			g.FirstSet[rName] = append(g.FirstSet[rName], 0x00)
-		} else if r == ValidLowercaseChar {
-			g.FirstSet[rName] = append(g.FirstSet[rName], ValidLowercaseChar...)
-			g.FirstSet[startRName] = append(g.FirstSet[startRName], ValidLowercaseChar...)
+		} else if r == ValidChar {
+			g.FirstSet[rName] = append(g.FirstSet[rName], ValidChar...)
+			g.FirstSet[startRName] = append(g.FirstSet[startRName], ValidChar...)
 		} else if r == ValidInt {
 			g.FirstSet[rName] = append(g.FirstSet[rName], ValidInt...)
 			g.FirstSet[startRName] = append(g.FirstSet[startRName], ValidInt...)

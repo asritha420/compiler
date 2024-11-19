@@ -28,15 +28,69 @@ These regex rules will be used in the upcoming steps of our parser. However, we 
 ### Defining Regex 
 
 The formal definition of regex is the following: 
+#TODO: cite 
+> Given an alphabet $\Sigma$, a **regular expression** (regex) $s$ is a string that denotes $L(s)$, or a set of strings drawn from $\Sigma$.  
+> $L(s)$ has the following properties:  
+> - For any $a \in \Sigma$, $a$ is a regex and $L(a) = \{ a \}$
+> - $\epsilon$ is a regex and $L(\epsilon) = \{ \epsilon \}$  
+> 
+> Given two regexes $s$ and $t$:  
+> - **Rule #1 (Alternation)**: $s|t$ is a regex such that $L(s|t) = L(s) \cup L(t)$  
+> - **Rule #2 (Concatenation)**: $st$ is a regex such that $L(st) = L(s)L(t)$, or a string in $L(s)$ followed by a string in $L(t)$.
+> - **Rule #3 (Kleene closure)**: $s*$ is a regex such that $L(s*) = L(s)$ concatenated zero or more times. 
 
 
-We will support the following regex syntax
+The scanner generator will support the following syntax for the regex strings that define token types:
 
-### Defining a Grammar for Regex 
-Lets start with grammar $G$. 
+- **Regular Operations**: 
+  - **alternation**: $a|b$
+  - **concatenation**: $ab$
+  - **Kleene closure**: $a*$
+- **Non-regular Operations**: (can be rewritten in terms of the regular operations) 
+  - **zero or one**: $a?$
+    - $a$ is optional  
+    - rewritten as $(a | \epsilon)$ 
+  - **one or more**: $a+$
+    - $a$ is repeated one or more times 
+    - rewritten as $aa*$
+  - **character class**: $[a-z]$
+    - match any character in the range of $a$ to $z$
+    - rewritten as $(a | b | ... | z)$
+  - **negation character class**: $^\wedge a$
+    - match any character except once 
+    - rewritten as $\sum -a$
+
+### An Unambiguous Grammar for Regex 
+We will create an LL(1) grammar to interpret any regex expression. 
+
+Lets start with grammar $G$.
 
 
+Unambiguous Grammar $G_3$: 
+- $P \rightarrow E$ 
+- $E \rightarrow TE'$
+- $E' \rightarrow | TE'$
+- $E' \rightarrow \epsilon$ 
+- $T \rightarrow FT'$
+- 
 
+```azure
 
+map[byte][]string{
+'P': {"E"},
+'E': {"TX"},
+'X': {"|TX", parsergen.Epsilon},
+'T': {"FY"},
+'Y': {"FY", parsergen.Epsilon},
+'F': {"GM"},
+'M': {"*M", parsergen.Epsilon},
+'G': {"(E)", parsergen.ValidChar, parsergen.ValidInt},
+		},
+		[]byte{'|', '*', '(', ')'},
+		[]byte{'P', 'E', 'X', 'T', 'Y', 'F', 'M', 'G'},
+```
+### Creating a Recursive Descent Parser for Regex 
 
+### Adding Type Safety to our Regex Parser
 
+#### The Expression Problem 

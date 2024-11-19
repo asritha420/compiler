@@ -42,9 +42,9 @@ var (
 			'X': {"+TX", parsergen.Epsilon},
 			'T': {"FU"},
 			'U': {"*FU", parsergen.Epsilon},
-			'F': {"(E)", parsergen.ValidLowercaseChar, parsergen.ValidInt},
+			'F': {"(E)", parsergen.ValidChar, parsergen.ValidInt},
 		},
-		append(append([]byte{'+', '*', '(', ')'}, parsergen.ValidLowercaseChar...), parsergen.ValidInt...), //terminals
-		[]byte{'P', 'E', 'X', 'T', 'U', 'F'}, //nonterminals, in desired order
+		append(append([]byte{'+', '*', '(', ')'}, parsergen.ValidChar...), parsergen.ValidInt...), //terminals
+		[]byte{'P', 'E', 'X', 'T', 'U', 'F'},                                                      //nonterminals, in desired order
 	)
 )

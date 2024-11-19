@@ -5,6 +5,9 @@ type Grammar interface {
 	generateFirstSet(ogByte byte, nt byte)
 }
 
+//LL(1)
+//LL(R)
+
 type Rule struct {
 	//TODO: everywhere I use a rule in code, make sure I call it name or production for naming clarity everywhere
 	name       byte //this cant support epsilon
