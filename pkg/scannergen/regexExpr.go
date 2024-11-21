@@ -16,10 +16,10 @@ type ASTPrinter interface {
 }
 
 type Const struct {
-	Value byte
+	Value rune
 }
 
-func NewConst(value byte) *Const {
+func NewConst(value rune) *Const {
 	return &Const{Value: value}
 }
 
@@ -32,21 +32,21 @@ func (c *Const) PrintNode(indent string) string {
 }
 
 type Alternation struct { // left | right
-	left  RExpr
-	right RExpr
+	Left  RExpr
+	Right RExpr
 }
 
 func NewAlternation(left RExpr, right RExpr) *Alternation {
-	return &Alternation{left: left, right: right}
+	return &Alternation{Left: left, Right: right}
 }
 
 func (a *Alternation) String() string {
-	return fmt.Sprintf("%s|%s", a.left, a.right)
+	return fmt.Sprintf("%s|%s", a.Left, a.Right)
 }
 
 func (a *Alternation) PrintNode(indent string) string {
-	if left, ok := a.left.(ASTPrinter); ok {
-		if right, ok := a.right.(ASTPrinter); ok {
+	if left, ok := a.Left.(ASTPrinter); ok {
+		if right, ok := a.Right.(ASTPrinter); ok {
 			return fmt.Sprintf(
 				"%sAlternation {\n%v,\n%v\n%s}",
 				indent, left.PrintNode(indent+"  "),
@@ -59,21 +59,21 @@ func (a *Alternation) PrintNode(indent string) string {
 }
 
 type Concatenation struct { // left right
-	left  RExpr
-	right RExpr
+	Left  RExpr
+	Right RExpr
 }
 
 func NewConcatenation(left RExpr, right RExpr) *Concatenation {
-	return &Concatenation{left: left, right: right}
+	return &Concatenation{Left: left, Right: right}
 }
 
 func (c *Concatenation) String() string {
-	return fmt.Sprintf("%s%s", c.left, c.right)
+	return fmt.Sprintf("%s%s", c.Left, c.Right)
 }
 
 func (c *Concatenation) PrintNode(indent string) string {
-	if left, ok := c.left.(ASTPrinter); ok {
-		if right, ok := c.right.(ASTPrinter); ok {
+	if left, ok := c.Left.(ASTPrinter); ok {
+		if right, ok := c.Right.(ASTPrinter); ok {
 			return fmt.Sprintf(
 				"%sConcatenation {\n%v,\n%v\n%s}",
 				indent, left.PrintNode(indent+"  "),
@@ -86,19 +86,19 @@ func (c *Concatenation) PrintNode(indent string) string {
 }
 
 type KleeneStar struct { // left*
-	left RExpr
+	Left RExpr
 }
 
 func NewKleeneStar(left RExpr) *KleeneStar {
-	return &KleeneStar{left: left}
+	return &KleeneStar{Left: left}
 }
 
 func (ks *KleeneStar) String() string {
-	return fmt.Sprintf("(%s)*", ks.left)
+	return fmt.Sprintf("(%s)*", ks.Left)
 }
 
 func (ks *KleeneStar) PrintNode(indent string) string {
-	if left, ok := ks.left.(ASTPrinter); ok {
+	if left, ok := ks.Left.(ASTPrinter); ok {
 		return fmt.Sprintf(
 			"%sKleeneStar {\n%v\n%s}",
 			indent, left.PrintNode(indent+"  "),
