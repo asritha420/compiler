@@ -69,26 +69,13 @@ Lets start with grammar $G$.
 Unambiguous Grammar $G_3$: 
 - $P \rightarrow E$ 
 - $E \rightarrow TE'$
-- $E' \rightarrow | TE'$
-- $E' \rightarrow \epsilon$ 
+- $E' \rightarrow$ "$|$" $TE' \ | \ \epsilon $
 - $T \rightarrow FT'$
-- 
+- $T' \rightarrow FT' \ | \ \epsilon$
+- $F \rightarrow GF'$
+- $F' \rightarrow$"$*$"$F' \ | \ \epsilon $
+- $G \rightarrow$ "$($"$\ E \ $"$)$" $\ | \ b$, where $b$ is any valid letter or number
 
-```azure
-
-map[byte][]string{
-'P': {"E"},
-'E': {"TX"},
-'X': {"|TX", parsergen.Epsilon},
-'T': {"FY"},
-'Y': {"FY", parsergen.Epsilon},
-'F': {"GM"},
-'M': {"*M", parsergen.Epsilon},
-'G': {"(E)", parsergen.ValidChar, parsergen.ValidInt},
-		},
-		[]byte{'|', '*', '(', ')'},
-		[]byte{'P', 'E', 'X', 'T', 'Y', 'F', 'M', 'G'},
-```
 ### Creating a Recursive Descent Parser for Regex 
 
 ### Adding Type Safety to our Regex Parser
