@@ -3,6 +3,7 @@ package scannergen
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ const (
 )
 
 type StateEdge struct {
-	Transition byte
+	Transition rune
 	Next       State
 }
 
@@ -23,7 +24,7 @@ type State interface {
 
 type NFAState struct {
 	id          uint
-	transitions map[byte][]*NFAState //input:nfaState
+	transitions map[rune][]*NFAState //input:nfaState
 	isAccepting bool
 }
 
@@ -50,7 +51,7 @@ func (state *NFAState) IsAccepting() bool {
 
 type DFAState struct {
 	id          uint
-	transitions map[byte]*DFAState
+	transitions map[rune]*DFAState
 	isAccepting bool
 }
 
@@ -82,8 +83,7 @@ func makeMermaidRecursion(rootState State, edges []string, closed map[uint]struc
 	closed[id] = struct{}{}
 	for _, edge := range rootState.GetEdges() {
 		edges, closed = makeMermaidRecursion(edge.Next, edges, closed)
-		edges = append(edges, fmt.Sprintf("%d -- %d --> %d", id, edge.Transition, edge.Next.GetId()))
-
+		edges = append(edges, fmt.Sprintf("%d -- %c --> %d", id, edge.Transition, edge.Next.GetId()))
 	}
 	return edges, closed
 }
@@ -94,14 +94,13 @@ func MakeMermaid(rootState State) string {
 }
 
 func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAState, id uint) (*NFAState, *NFAState, map[uint]*NFAState, uint, error) {
-
 	switch rootNode := regexASTRootNode.(type) {
 	case *Concatenation:
-		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
+		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("concatination left node: %w", err)
 		}
-		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.right, idToState, id)
+		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Right, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("concatenation right node: %w", err)
 		}
@@ -109,17 +108,17 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		lNFALastState.transitions[epsilon] = append(lNFALastState.transitions[epsilon], rNFAState)
 		return lNFAState, rNFALastState, idToState, id, nil
 	case *Alternation:
-		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
+		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("alternation left node: %w", err)
 		}
-		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.right, idToState, id)
+		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Right, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("alternation right node: %w", err)
 		}
 
 		start := &NFAState{
-			transitions: map[byte][]*NFAState{
+			transitions: map[rune][]*NFAState{
 				epsilon: {lNFAState, rNFAState},
 			},
 			id: id,
@@ -129,7 +128,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 
 		end := &NFAState{
 			id:          id,
-			transitions: make(map[byte][]*NFAState),
+			transitions: make(map[rune][]*NFAState),
 		}
 		idToState[id] = end
 		id++
@@ -139,13 +138,13 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 
 		return start, end, idToState, id, nil
 	case *KleeneStar:
-		NFAStartState, NFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.left, idToState, id)
+		NFAStartState, NFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("kleene star child node: %w", err)
 		}
 
 		start := &NFAState{
-			transitions: map[byte][]*NFAState{
+			transitions: map[rune][]*NFAState{
 				epsilon: {NFAStartState},
 			},
 			id: id,
@@ -154,7 +153,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		id++
 
 		end := &NFAState{
-			transitions: map[byte][]*NFAState{
+			transitions: map[rune][]*NFAState{
 				epsilon: {start},
 			},
 			id: id,
@@ -168,7 +167,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		return start, end, idToState, id, nil
 	case *Const:
 		start := &NFAState{
-			transitions: make(map[byte][]*NFAState),
+			transitions: make(map[rune][]*NFAState),
 			id:          id,
 		}
 		idToState[id] = start
@@ -176,7 +175,7 @@ func ConvertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 
 		end := &NFAState{
 			id:          id,
-			transitions: make(map[byte][]*NFAState),
+			transitions: make(map[rune][]*NFAState),
 		}
 		idToState[id] = end
 		id++
@@ -197,25 +196,30 @@ func ConvertRegexToNfa(regexASTRootNode RExpr) (*NFAState, *NFAState, map[uint]*
 	return start, end, idMap, nil
 }
 
-func epsilonClosureRecursion(initialState *NFAState, states []*NFAState, closed map[uint]struct{}) ([]*NFAState, map[uint]struct{}) {
+func epsilonClosureRecursion(initialState *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) ([]*NFAState, map[uint]struct{}, map[rune]struct{}) {
 	if _, ok := closed[initialState.id]; ok {
-		return states, closed
+		return states, closed, transitions
 	}
 	closed[initialState.id] = struct{}{}
 	states = append(states, initialState)
-	for _, s := range initialState.transitions[epsilon] {
-		states, closed = epsilonClosureRecursion(s, states, closed)
+	// TODO make more efficient?
+	for t := range maps.Keys(initialState.transitions) {
+		transitions[t] = struct{}{}
 	}
-	return states, closed
+	for _, s := range initialState.transitions[epsilon] {
+		states, closed, transitions = epsilonClosureRecursion(s, states, closed, transitions)
+	}
+	return states, closed, transitions
 }
 
-func epsilonClosure(states ...*NFAState) ([]*NFAState, map[uint]struct{}) {
+func epsilonClosure(states ...*NFAState) ([]*NFAState, map[uint]struct{}, map[rune]struct{}) {
 	allStates := make([]*NFAState, 0)
 	closed := make(map[uint]struct{})
+	transitions := make(map[rune]struct{})
 	for _, state := range states {
-		allStates, closed = epsilonClosureRecursion(state, allStates, closed)
+		allStates, closed, transitions = epsilonClosureRecursion(state, allStates, closed, transitions)
 	}
-	return allStates, closed
+	return allStates, closed, transitions
 }
 
 func IsAccepting(states ...*NFAState) bool {
@@ -234,8 +238,9 @@ func idsToString(ids map[uint]struct{}) string {
 }
 
 type OpenListEntry struct {
-	NFAstates []*NFAState
-	state     *DFAState
+	NFAstates   []*NFAState
+	Transitions map[rune]struct{}
+	state       *DFAState
 }
 
 func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState) {
@@ -243,18 +248,19 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 	DFAStates := make(map[string]*DFAState)
 	openList := make([]OpenListEntry, 0)
 
-	initialNFAClass, initialNFAClassIds := epsilonClosure(initialNFAState)
+	initialNFAClass, initialNFAClassIds, transitions := epsilonClosure(initialNFAState)
 	initialDFAState := &DFAState{
 		id:          id,
-		transitions: make(map[byte]*DFAState),
+		transitions: make(map[rune]*DFAState),
 		isAccepting: IsAccepting(initialNFAClass...),
 	}
 	id++
 
 	DFAStates[idsToString(initialNFAClassIds)] = initialDFAState
 	openList = append(openList, OpenListEntry{
-		NFAstates: initialNFAClass,
-		state:     initialDFAState,
+		NFAstates:   initialNFAClass,
+		Transitions: transitions,
+		state:       initialDFAState,
 	})
 
 	for len(openList) > 0 {
@@ -262,18 +268,16 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 		openList = openList[1:]
 
 		// loop through all possible transition (not including epsilon!)
-		for i := 1; i < 256; i++ {
-			transition := byte(i)
+		for transition := range currentEntry.Transitions {
+			if(transition == epsilon) {continue}
+
 			transitionNFAClass := make([]*NFAState, 0)
 			// loop through all nodes in the current set and get all future nodes using the specific transition
 			for _, currentNFAState := range currentEntry.NFAstates {
 				transitionNFAClass = append(transitionNFAClass, currentNFAState.transitions[transition]...)
 			}
-			// if empty just continue (nothing will change)
-			if len(transitionNFAClass) == 0 {
-				continue
-			}
-			transitionNFAClass, transitionNFAIds := epsilonClosure(transitionNFAClass...)
+
+			transitionNFAClass, transitionNFAIds, transitions := epsilonClosure(transitionNFAClass...)
 
 			transitionNFAIdString := idsToString(transitionNFAIds)
 			transitionDFAState, ok := DFAStates[transitionNFAIdString]
@@ -282,14 +286,15 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 				// if not make DFA state and add transition to open list
 				transitionDFAState = &DFAState{
 					id:          id,
-					transitions: make(map[byte]*DFAState),
+					transitions: make(map[rune]*DFAState),
 					isAccepting: IsAccepting(transitionNFAClass...),
 				}
 				id++
 
 				openList = append(openList, OpenListEntry{
-					NFAstates: transitionNFAClass,
-					state:     transitionDFAState,
+					NFAstates:   transitionNFAClass,
+					Transitions: transitions,
+					state:       transitionDFAState,
 				})
 
 				DFAStates[transitionNFAIdString] = transitionDFAState
@@ -308,3 +313,10 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 //	// Partition into accepting and non-accpeting
 //
 //}
+
+// func runDFA(initialDFAState *DFAState, input string) bool {
+// 	currState := initialDFAState
+// 	for _, char := range input {
+
+// 	}
+// }
