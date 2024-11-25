@@ -75,6 +75,16 @@ func (state *DFAState) IsAccepting() bool {
 	return state.isAccepting
 }
 
+func getMermaidNodeIdString(state State) string {
+	id := fmt.Sprintf("id%d", state.GetId())
+	if(state.IsAccepting()){
+		id += fmt.Sprintf("(((%d)))", state.GetId())
+	} else {
+		id += fmt.Sprintf("((%d))", state.GetId())
+	}
+	return id
+}
+
 func makeMermaidRecursion(rootState State, edges []string, closed map[uint]struct{}) ([]string, map[uint]struct{}) {
 	id := rootState.GetId()
 	if _, ok := closed[id]; ok {
@@ -82,14 +92,21 @@ func makeMermaidRecursion(rootState State, edges []string, closed map[uint]struc
 	}
 	closed[id] = struct{}{}
 	for _, edge := range rootState.GetEdges() {
+		transition := ""
+		if edge.Transition == epsilon {
+			transition = "ɛ"
+		} else {
+			transition = fmt.Sprintf("%c", edge.Transition)
+		}
+		edges = append(edges, fmt.Sprintf("%s -- %s --> %s", getMermaidNodeIdString(rootState), transition, getMermaidNodeIdString(edge.Next)))
 		edges, closed = makeMermaidRecursion(edge.Next, edges, closed)
-		edges = append(edges, fmt.Sprintf("%d -- %c --> %d", id, edge.Transition, edge.Next.GetId()))
 	}
 	return edges, closed
 }
 
 func MakeMermaid(rootState State) string {
 	edges, _ := makeMermaidRecursion(rootState, make([]string, 0), make(map[uint]struct{}))
+	edges = append(edges, fmt.Sprintf("START:::hidden -- start --> %s", getMermaidNodeIdString(rootState)))
 	return strings.Join(edges, "\n")
 }
 
@@ -269,7 +286,9 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 
 		// loop through all possible transition (not including epsilon!)
 		for transition := range currentEntry.Transitions {
-			if(transition == epsilon) {continue}
+			if transition == epsilon {
+				continue
+			}
 
 			transitionNFAClass := make([]*NFAState, 0)
 			// loop through all nodes in the current set and get all future nodes using the specific transition
@@ -308,11 +327,37 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 	return initialDFAState, DFAStates
 }
 
-//
-//func minimizeDFA(initialDFAState *DFAState) *DFAState {
-//	// Partition into accepting and non-accpeting
-//
-//}
+
+func minimizeDFA(initialDFAState *DFAState, states map[string]*DFAState) *DFAState {
+	// Partition into accepting and non-accepting
+	// DFAClassMap := make(map[*DFAState]uint)
+	nonaccepting := make([]*DFAState, 0)
+	accepting := make([]*DFAState, 0)
+	
+	for _, state := range states {
+		if state.isAccepting {
+			accepting = append(accepting, state)
+		} else {
+			nonaccepting = append(nonaccepting, state)
+		}
+	}
+	classes := [][]*DFAState{
+		accepting,
+		nonaccepting,
+	}
+
+	modified := true
+	for modified{
+		modified = false
+		for _, class := range classes {
+			if len(class) == 1 {
+				continue
+			}
+		}
+	}
+
+	return nil
+}
 
 // func runDFA(initialDFAState *DFAState, input string) bool {
 // 	currState := initialDFAState

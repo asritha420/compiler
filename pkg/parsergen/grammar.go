@@ -8,13 +8,13 @@ import (
 type grammar struct {
 	Rules        []Rule
 	nonTerminals []string
-	terminals    []string //TODO: should terminals be []byte ?
+	terminals    []rune
 }
 
 func newGrammar(rules []Rule) *grammar {
 	g := &grammar{
 		Rules:        rules,
-		terminals:    make([]string, 0),
+		terminals:    make([]rune, 0),
 		nonTerminals: make([]string, 0),
 	}
 	g.fillNonTerminals()

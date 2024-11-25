@@ -6,6 +6,7 @@ import (
 
 	// "asritha.dev/compiler/pkg/parsergen"
 	"asritha.dev/compiler/pkg/scannergen"
+	// "google.golang.org/genproto/googleapis/home/graph/v1"
 	// "asritha.dev/compiler/tests"
 	// "google.golang.org/genproto/googleapis/home/graph/v1"
 	// "google.golang.org/grpc"
@@ -45,16 +46,6 @@ func TestFirstAndFollowSets() {
 	// 	}
 	// }
 
-<<<<<<< HEAD
-func TestRegexParser() {
-	rules := []parsergen.Rule{
-		parsergen.Rule{
-			NonTerminal: "P",
-			Productions: []string{},
-		},
-	}
-	test := parsergen.NewLL1Grammar()
-=======
 	// func TestRegexParser() {
 	// 	//TODO: this should be using the initializer function
 	// 	regexGrammar := parsergen.NewLL1Grammar(
@@ -97,19 +88,45 @@ func TestRegexParser() {
 	// 	if err != nil {
 	// 		log.Fatal(err)
 	// 	}
-	graph := &scannergen.Concatenation{
-		Left: &scannergen.Const{Value: 'a'},
-		Right: &scannergen.KleeneStar{
-			Left: &scannergen.Alternation{
-			Left:  &scannergen.Const{Value: '❌'},
-			Right: &scannergen.Const{Value: 'w'},
+	
+	// a(❌😔|w)*
+	// graph := &scannergen.Concatenation{
+	// 	Left: &scannergen.Const{Value: 'a'},
+	// 	Right: &scannergen.KleeneStar{
+	// 		Left: &scannergen.Alternation{
+	// 			Left:  &scannergen.Concatenation{
+	// 				Left: &scannergen.Const{Value: '❌'},
+	// 				Right: &scannergen.Const{Value: '😔'},
+	// 			},
+	// 			Right: &scannergen.Const{Value: 'w'},
+	// 		},
+	// 	},
+	// }
+
+	// (b | ab | aab)*
+	graph := &scannergen.KleeneStar{
+		Left: &scannergen.Alternation{
+			Left: &scannergen.Const{Value: 'b'},
+			Right: &scannergen.Alternation{
+				Left: &scannergen.Concatenation{
+					Left: &scannergen.Const{Value: 'a'},
+					Right: &scannergen.Const{Value: 'b'},
+				},
+				Right: &scannergen.Concatenation{
+					Left: &scannergen.Const{Value: 'a'},
+					Right: &scannergen.Concatenation{
+						Left: &scannergen.Const{Value: 'a'},
+						Right: &scannergen.Const{Value: 'b'},
+					},
+				},
+			},
 		},
-	},
 	}
+
 	NFA, _, _, _ := scannergen.ConvertRegexToNfa(graph)
-	DFA, _ := scannergen.ConvertNFAtoDFA(NFA)
-	println(scannergen.MakeMermaid(DFA))
->>>>>>> 9d4db2b6c573136beb0a38e0c5de13658bd7d7ac
+	// DFA, _ := scannergen.ConvertNFAtoDFA(NFA)
+	// scannergen.minimizeDFA(DFA, DFAMap)
+	println(scannergen.MakeMermaid(NFA))
 }
 
 //func TestRegexParser() {

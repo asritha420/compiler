@@ -7,11 +7,11 @@ type Rule struct {
 	followSet   []string
 }
 
-func NewRule(nT string, productions []string) (*Rule, error) {
-	//TODO: implement error handling if inaccurate rule
-	r := &Rule{
+func NewRule(nT string, productions []string) *Rule {
+	return &Rule{
 		NonTerminal: nT,
 		Productions: productions,
+		firstSet: make([]string, 0),
+		followSet: make([]string, 0),
 	}
-	return r, nil
 }
