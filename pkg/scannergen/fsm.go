@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"reflect"
 	"strings"
 )
 
@@ -77,7 +78,7 @@ func (state *DFAState) IsAccepting() bool {
 
 func getMermaidNodeIdString(state State) string {
 	id := fmt.Sprintf("id%d", state.GetId())
-	if(state.IsAccepting()){
+	if state.IsAccepting() {
 		id += fmt.Sprintf("(((%d)))", state.GetId())
 	} else {
 		id += fmt.Sprintf("((%d))", state.GetId())
@@ -254,6 +255,14 @@ func idsToString(ids map[uint]struct{}) string {
 	return string(b)
 }
 
+func idsToStringDFA(ids map[uint]*DFAState) string {
+	newMap := make(map[uint]struct{})
+	for key, _ := range ids {
+		newMap[key] = struct{}{}
+	}
+	return idsToString(newMap)
+}
+
 type OpenListEntry struct {
 	NFAstates   []*NFAState
 	Transitions map[rune]struct{}
@@ -327,41 +336,116 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 	return initialDFAState, DFAStates
 }
 
+type DFAClass struct {
+	transitions map[rune]*DFAClass
+	states      map[uint]*DFAState
+	isAccepting bool
+}
 
-func minimizeDFA(initialDFAState *DFAState, states map[string]*DFAState) *DFAState {
-	// Partition into accepting and non-accepting
-	// DFAClassMap := make(map[*DFAState]uint)
-	nonaccepting := make([]*DFAState, 0)
-	accepting := make([]*DFAState, 0)
-	
-	for _, state := range states {
-		if state.isAccepting {
-			accepting = append(accepting, state)
-		} else {
-			nonaccepting = append(nonaccepting, state)
-		}
-	}
-	classes := [][]*DFAState{
-		accepting,
-		nonaccepting,
-	}
-
-	modified := true
-	for modified{
-		modified = false
-		for _, class := range classes {
-			if len(class) == 1 {
-				continue
-			}
+func findDFAClassFromState(state *DFAState, classes []*DFAClass) *DFAClass {
+	for _, class := range classes {
+		if _, ok := class.states[state.id]; ok {
+			return class
 		}
 	}
 
 	return nil
 }
 
-// func runDFA(initialDFAState *DFAState, input string) bool {
-// 	currState := initialDFAState
-// 	for _, char := range input {
+func findDFAClassFromTransitions(transitions map[rune]*DFAClass, classes []*DFAClass) *DFAClass {
+	for _, class := range classes {
+		if reflect.DeepEqual(class.transitions, transitions) {
+			return class
+		}
+	}
 
-// 	}
-// }
+	return nil
+}
+
+func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
+	new_classes := make([]*DFAClass, 0)
+	for _, state := range class.states {
+		transitions := make(map[rune]*DFAClass)
+		for key, transition := range state.transitions {
+			transitions[key] = findDFAClassFromState(transition, classes)
+		}
+		if transitionClass := findDFAClassFromTransitions(transitions, new_classes); transitionClass != nil {
+			transitionClass.states[state.id] = state
+		} else {
+			new_classes = append(new_classes, &DFAClass{
+				transitions: transitions,
+				states: map[uint]*DFAState{
+					state.id: state,
+				},
+				isAccepting: class.isAccepting,
+			})
+		}
+	}
+
+	return new_classes
+}
+
+func MinimizeDFA(initialStateId uint, states map[string]*DFAState) *DFAState {
+	// Partition into accepting and non-accepting
+	nonaccepting := &DFAClass{
+		states: make(map[uint]*DFAState),
+		isAccepting: false,
+	}
+	accepting := &DFAClass{
+		states: make(map[uint]*DFAState),
+		isAccepting: true,
+	}
+
+	for _, state := range states {
+		if state.isAccepting {
+			accepting.states[state.id] = state
+		} else {
+			nonaccepting.states[state.id] = state
+		}
+	}
+
+	accepting.isAccepting = true
+
+	classes := []*DFAClass{
+		accepting,
+		nonaccepting,
+	}
+
+	modified := true
+	for modified {
+		modified = false
+		newClasses := make([]*DFAClass, 0)
+		for _, class := range classes {
+			seperatedClasses := makeDFAClasses(class, classes)
+			if(len(seperatedClasses) != 1) {
+				modified = true	
+			}
+			newClasses = append(newClasses, seperatedClasses...)
+		}
+		classes = newClasses
+	}
+
+	// create all states
+	classToState := make(map[string]*DFAState)
+	var initialDFAState *DFAState
+	for i, class := range classes {
+		state := &DFAState{
+			id: uint(i),
+			isAccepting: class.isAccepting,
+			transitions: make(map[rune]*DFAState),
+		}
+		classToState[idsToStringDFA(class.states)] = state
+		if _, ok := class.states[initialStateId]; ok {
+			initialDFAState = state
+		}
+	}
+
+	// link states
+	for _, class := range classes {
+		for transition, transitionClass := range class.transitions {
+			classToState[idsToStringDFA(class.states)].transitions[transition] = classToState[idsToStringDFA(transitionClass.states)]
+		}
+	}
+
+	return initialDFAState
+}
