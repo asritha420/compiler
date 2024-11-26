@@ -163,7 +163,7 @@ func idsToStringDFA(ids map[uint]*DFAState) string {
 		newMap[key] = struct{}{}
 	}
 	return idsToString(newMap)
-}	"strings"
+}
 
 
 type OpenListEntry struct {
