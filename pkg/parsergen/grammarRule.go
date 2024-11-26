@@ -5,6 +5,13 @@ import (
 	"slices"
 )
 
+type RuleTokenType int
+
+const (
+	TERMINAL RuleTokenType = iota
+	NON_TERMINAL
+)
+
 type Rule struct {
 	NonTerminal string
 	Productions [][]RuleToken
@@ -13,15 +20,9 @@ type Rule struct {
 	terminals   []rune
 }
 
-type RuleToken interface {
-}
-
-type Terminal struct {
-	value rune
-}
-
-type NonTerminal struct {
-	value string
+type RuleToken struct {
+	tokenType RuleTokenType
+	value []rune
 }
 
 //
@@ -65,7 +66,7 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 				return nil, fmt.Errorf("invalid character '%c' after \\ at index %d", ch, i)
 			}
 
-			production = append(production, Terminal{value: ch})
+			production = append(production, RuleToken{tokenType: TERMINAL, value: []rune{ch}})
 			isEscaped = false
 			continue
 		}
@@ -78,7 +79,7 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 				isEscaped = true
 				continue
 			}
-			production = append(production, Terminal{value: ch})
+			production = append(production, RuleToken{tokenType: TERMINAL, value: []rune{ch}})
 			continue
 		}
 
@@ -118,7 +119,7 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 				return nil, fmt.Errorf("invalid non-terminal \"%s\" at index %d", string(ntString), i)
 			}
 
-			production = append(production, NonTerminal{value: string(ntString)})
+			production = append(production, RuleToken{tokenType: NON_TERMINAL, value: ntString})
 			ntStart = -1
 			continue
 		}
