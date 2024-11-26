@@ -1,6 +1,9 @@
 package parsergen
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type Rule struct {
 	NonTerminal string
@@ -39,73 +42,120 @@ type NonTerminal struct {
 */
 //}
 
-func ConvertProduction(p string, validNT []string) ([]RuleToken, error) {
-	rules := make([]RuleToken, 0)
+func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
+	ruleRunes := []rune(rule)
+	validNTsRunes := make([][]rune, 0)
+	for _, validNT := range validNTs{
+		validNTsRunes = append(validNTsRunes, []rune(validNT))
+	} 
+	
+	productions := make([][]RuleToken, 0)
+	production := make([]RuleToken, 0)
+
 	isTerminal := false
+	isEscaped := false //Should only be true if in terminal mode!!
+
 	ntStart := -1
-	var ntString string
-	isEscaped := false
-	for i, ch := range p {
-		if ch == '"' {
-			if isEscaped && isTerminal {
-				isEscaped = false
-			} else {
-				isTerminal = !isTerminal
-				continue
+	var ntString []rune 
+	var currValidNTs [][]rune
+
+	for i, ch := range ruleRunes {
+		if isEscaped {
+			if ch != '"' && ch != '\\' {
+				return nil, fmt.Errorf("invalid character '%c' after \\ at index %d", ch, i)
 			}
+
+			production = append(production, Terminal{value: ch})
+			isEscaped = false
+			continue
+		}
+		if ch == '"' {
+			isTerminal = !isTerminal
+			continue
 		}
 		if isTerminal {
 			if ch == '\\' {
-				if isEscaped {
-					isEscaped = false
-				} else {
-					isEscaped = true
-					continue
-				}
+				isEscaped = true
+				continue
 			}
-			rules = append(rules, Terminal{value: ch})
-		} else {
-			if ntStart == -1 {
-				ntStart = i
-				ntString = p[ntStart:]
+			production = append(production, Terminal{value: ch})
+			continue
+		}
+
+		// skip non terminal spaces (only if not looking for non terminal)
+		if ch == ' ' {
+			if ntStart != -1 {
+				return nil, fmt.Errorf("space encountered at index %d without finishing non terminal", i)
+			}
+			continue
+		}
+
+		// check for new production
+		if ch == '|' {
+			if ntStart != -1 {
+				// invalid state
+				return nil, fmt.Errorf("start of new production at index %d without finishing previous one", i)
+			}
+			productions = append(productions, production)
+			production = make([]RuleToken, 0)
+			continue
+		}
+
+		// start new NT
+		if ntStart == -1 {
+			ntStart = i
+			ntString = ruleRunes[ntStart:]
+			currValidNTs = nonTerminalLookAhead(ntString, 0, validNTsRunes) // filters first character
+		}
+
+		// look ahead 1
+		lookAheadIndex := i - ntStart + 1
+		tmpValidNTs := nonTerminalLookAhead(ntString, lookAheadIndex, currValidNTs)
+		if len(tmpValidNTs) == 0 {
+			// NT no longer valid
+			ntString = ntString[:lookAheadIndex]
+			if !nonTerminalMatches(ntString, currValidNTs){
+				return nil, fmt.Errorf("invalid non-terminal \"%s\" at index %d", string(ntString), i)
 			}
 
-			if !prodLookAhead(ntString, i-ntStart+1, validNT) {
-				// found new NT
-				ntString = ntString[:i-ntStart+1]
-				if err := matchesNT(ntString, validNT); err != nil {
-					return nil, err
-				}
-				rules = append(rules, NonTerminal{value: ntString})
-				ntStart = -1
-			}
+			production = append(production, NonTerminal{value: string(ntString)})
+			ntStart = -1
+			continue
 		}
+		currValidNTs = tmpValidNTs
 	}
-	return rules, nil
+	
+	if(isTerminal){
+		return nil, fmt.Errorf("end of rule reached without closing \"")
+	}
+
+	productions = append(productions, production)
+
+	return productions, nil
 }
 
-func prodLookAhead(p string, index int, validNT []string) bool {
-	for i := 0; i < len(validNT); i++ {
-		if len(validNT[i]) > index && validNT[i][index] == p[index] {
+/*
+NTLookAhead will take the string p and check if the character at an index matches any NT at the same index.
+*/
+func nonTerminalLookAhead(p []rune, index int, allNTs [][]rune) [][]rune {
+	validNTs := make([][]rune, 0)
+	if len(p) <= index{
+		return validNTs
+	}
+
+	for _, nt := range allNTs {
+		if len(nt) > index && nt[index] == p[index] {
+			validNTs = append(validNTs, nt)
+		}
+	}
+	return validNTs
+}
+
+func nonTerminalMatches(nt []rune, validNTs [][]rune) bool {
+	for _, validNT := range validNTs{
+		if slices.Equal(nt, validNT) {
 			return true
 		}
 	}
 	return false
-}
-
-func matchesNT(p string, validNT []string) error {
-	matched := false
-	for _, nt := range validNT {
-		if p == nt {
-			if matched {
-				return fmt.Errorf("multiple tokens matched %s", p)
-			}
-			matched = true
-		}
-	}
-	if !matched {
-		return fmt.Errorf("token %s not found", p)
-	} else {
-		return nil
-	}
 }

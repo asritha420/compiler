@@ -1,14 +1,43 @@
 package main
 
 import (
-	"asritha.dev/compiler/pkg/parsergen"
 	"fmt"
+
+	"asritha.dev/compiler/pkg/parsergen"
 )
 
 func main() {
 
-	test, _ := parsergen.ConvertProduction("EE'T\" \\\"7\\\\\"", []string{"E", "T", "E'"})
+	// // (b | ab | aab)*
+	// graph := &scannergen.KleeneStar{
+	// 	Left: &scannergen.Alternation{
+	// 		Left: &scannergen.Const{Value: 'b'},
+	// 		Right: &scannergen.Alternation{
+	// 			Left: &scannergen.Concatenation{
+	// 				Left: &scannergen.Const{Value: 'a'},
+	// 				Right: &scannergen.Const{Value: 'b'},
+	// 			},
+	// 			Right: &scannergen.Concatenation{
+	// 				Left: &scannergen.Const{Value: 'a'},
+	// 				Right: &scannergen.Concatenation{
+	// 					Left: &scannergen.Const{Value: 'a'},
+	// 					Right: &scannergen.Const{Value: 'b'},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// }
 
+	// NFA, _, _, _ := scannergen.ConvertRegexToNfa(graph)
+	// // DFA, _ := scannergen.ConvertNFAtoDFA(NFA)
+	// // scannergen.minimizeDFA(DFA, DFAMap)
+	// println(scannergen.MakeMermaid(NFA))
+
+	test, err := parsergen.ConvertProductions("ERTE'T\" \\\"7\\\\\" | E'ER TE'", []string{"ER", "ERT", "T", "E'", "E", "RE😊"})
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
 	// \"7\\
 	for _, t := range test {
 		fmt.Printf("%c", t)
