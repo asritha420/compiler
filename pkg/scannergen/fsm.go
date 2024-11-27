@@ -16,11 +16,11 @@ const (
 func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAState, id uint) (*NFAState, *NFAState, map[uint]*NFAState, uint, error) {
 	switch rootNode := regexASTRootNode.(type) {
 	case *Concatenation:
-		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
+		lNFAState, lNFALastState, idToState, id, err := convertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("concatination left node: %w", err)
 		}
-		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Right, idToState, id)
+		rNFAState, rNFALastState, idToState, id, err := convertRegexToNfaRecursion(rootNode.Right, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("concatenation right node: %w", err)
 		}
@@ -28,11 +28,11 @@ func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 		lNFALastState.transitions[epsilon] = append(lNFALastState.transitions[epsilon], rNFAState)
 		return lNFAState, rNFALastState, idToState, id, nil
 	case *Alternation:
-		lNFAState, lNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
+		lNFAState, lNFALastState, idToState, id, err := convertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("alternation left node: %w", err)
 		}
-		rNFAState, rNFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Right, idToState, id)
+		rNFAState, rNFALastState, idToState, id, err := convertRegexToNfaRecursion(rootNode.Right, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("alternation right node: %w", err)
 		}
@@ -58,7 +58,7 @@ func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 
 		return start, end, idToState, id, nil
 	case *KleeneStar:
-		NFAStartState, NFALastState, idToState, id, err := ConvertRegexToNfaRecursion(rootNode.Left, idToState, id)
+		NFAStartState, NFALastState, idToState, id, err := convertRegexToNfaRecursion(rootNode.Left, idToState, id)
 		if err != nil {
 			return nil, nil, nil, 0, fmt.Errorf("kleene star child node: %w", err)
 		}
@@ -108,7 +108,7 @@ func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*NFAS
 }
 
 func ConvertRegexToNfa(regexASTRootNode RExpr) (*NFAState, *NFAState, map[uint]*NFAState, error) {
-	start, end, idMap, _, err := ConvertRegexToNfaRecursion(regexASTRootNode, make(map[uint]*NFAState), 0)
+	start, end, idMap, _, err := convertRegexToNfaRecursion(regexASTRootNode, make(map[uint]*NFAState), 0)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("convertRegexToNfa: Unable to convert regex AST to NFA. Node trace:\n\t%w", err)
 	}

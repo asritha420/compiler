@@ -5,7 +5,9 @@ import (
 )
 
 // RExpr is implemented by all types automatically
-type RExpr interface{}
+type RExpr interface{
+	
+}
 
 type String interface {
 	String() string

@@ -3,6 +3,7 @@ package parsergen
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 type RuleTokenType int
@@ -13,57 +14,96 @@ const (
 )
 
 type Rule struct {
-	NonTerminal string
-	Productions [][]RuleToken
+	nonTerminal string
+	productions [][]RuleToken
 	firstSet    []string
 	followSet   []string
-	terminals   []rune
 }
 
 type RuleToken struct {
 	tokenType RuleTokenType
-	value []rune
+	value     []rune
 }
 
-//
-//func NewRule(nT string, productions []string) *Rule {
-//	return &Rule{
-//		NonTerminal: nT,
-//		Productions: productions,
-//	}
-//}
+// function for all constraints on non terminals
+// eg. no spaces or quotes
+func validNonTerminal(nt string) bool {
+	return !strings.ContainsAny(nt, " \n\t\"[]")
+}
 
-//func NewRules(rules string) []*Rule {
-/*
-	for each line
+func NewRules(inputRulesStr string) ([]*Rule, [][]rune, error) {
+	inputRules := strings.Split(inputRulesStr, "\n")
+	parsedRules := make(map[string]string)
 
-	lh of arrow: becomes nt string
-	rh of arrow: is prodcution, will convert into tokens
+	// split the rule
+	for i, rule := range inputRules {
+		rule = strings.TrimSpace(rule)
+		if len(rule) == 0 {
+			continue
+		}
 
-*/
-//}
+		tokens := strings.Split(rule, "->")
+		if len(tokens) != 2 {
+			return nil, nil, fmt.Errorf("[newRules] invalid rule format at line %d", i+1)
+		}
+		nt := strings.TrimSpace(tokens[0])
+		if !validNonTerminal(nt) {
+			return nil, nil, fmt.Errorf("[newRules] non terminal %s at line %d is invalid", nt, i+1)
+		}
+		if _, ok := parsedRules[nt]; ok {
+			return nil, nil, fmt.Errorf("[newRules] repeated non terminal %s at line %d", nt, i+1)
+		}
 
-func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
-	ruleRunes := []rune(rule)
-	validNTsRunes := make([][]rune, 0)
-	for _, validNT := range validNTs{
-		validNTsRunes = append(validNTsRunes, []rune(validNT))
-	} 
-	
+		parsedRules[nt] = strings.TrimSpace(tokens[1])
+	}
+
+	// make valid non terminals
+	validNTs := make([][]rune, 0)
+	for nt, _ := range parsedRules {
+		validNTs = append(validNTs, []rune(nt))
+	}
+
+	// convert to rules
+	rules := make([]*Rule, 0)
+	for nt, productions := range parsedRules {
+		paresdProductions, err := convertProductions([]rune(productions), validNTs)
+		if err != nil {
+			return nil, nil, fmt.Errorf("[newRules] failed to convert production %s because:\n%w", productions, err)
+		}
+		rules = append(rules, &Rule{
+			nonTerminal: nt,
+			productions: paresdProductions,
+		})
+	}
+
+	return rules, validNTs, nil
+}
+
+func convertProductions(inputProductions []rune, validNTs [][]rune) ([][]RuleToken, error) {
 	productions := make([][]RuleToken, 0)
 	production := make([]RuleToken, 0)
 
+	isRange := false
 	isTerminal := false
 	isEscaped := false //Should only be true if in terminal mode!!
 
-	ntStart := -1
-	var ntString []rune 
+	currTokenStart := -1
+
 	var currValidNTs [][]rune
 
-	for i, ch := range ruleRunes {
+	for i, ch := range inputProductions {
+		if isRange {
+			// check for end of range
+			if ch != ']'{
+				continue
+			}
+			isRange = false
+			currRange := inputProductions[currTokenStart:i]
+			
+		}
 		if isEscaped {
 			if ch != '"' && ch != '\\' {
-				return nil, fmt.Errorf("invalid character '%c' after \\ at index %d", ch, i)
+				return nil, fmt.Errorf("[convertProductions] invalid character '%c' after \\ at index %d", ch, i)
 			}
 
 			production = append(production, RuleToken{tokenType: TERMINAL, value: []rune{ch}})
@@ -83,19 +123,26 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 			continue
 		}
 
+		// check for start of range
+		if ch == '[' {
+			isRange = true
+			currTokenStart = i
+			continue
+		}
+
 		// skip non terminal spaces (only if not looking for non terminal)
 		if ch == ' ' {
-			if ntStart != -1 {
-				return nil, fmt.Errorf("space encountered at index %d without finishing non terminal", i)
+			if currTokenStart != -1 {
+				return nil, fmt.Errorf("[convertProductions] space encountered at index %d without finishing non terminal", i)
 			}
 			continue
 		}
 
 		// check for new production
 		if ch == '|' {
-			if ntStart != -1 {
+			if currTokenStart != -1 {
 				// invalid state
-				return nil, fmt.Errorf("start of new production at index %d without finishing previous one", i)
+				return nil, fmt.Errorf("[convertProductions] start of new production at index %d without finishing previous one", i)
 			}
 			productions = append(productions, production)
 			production = make([]RuleToken, 0)
@@ -103,31 +150,34 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 		}
 
 		// start new NT
-		if ntStart == -1 {
-			ntStart = i
-			ntString = ruleRunes[ntStart:]
-			currValidNTs = nonTerminalLookAhead(ntString, 0, validNTsRunes) // filters first character
+		if currTokenStart == -1 {
+			currTokenStart = i
+			currValidNTs = nonTerminalLookAhead(inputProductions[currTokenStart:], 0, validNTs) // filters first character
 		}
 
 		// look ahead 1
-		lookAheadIndex := i - ntStart + 1
-		tmpValidNTs := nonTerminalLookAhead(ntString, lookAheadIndex, currValidNTs)
+		lookAheadIndex := i - currTokenStart + 1
+		tmpValidNTs := nonTerminalLookAhead(inputProductions[currTokenStart:], lookAheadIndex, currValidNTs)
 		if len(tmpValidNTs) == 0 {
 			// NT no longer valid
-			ntString = ntString[:lookAheadIndex]
-			if !nonTerminalMatches(ntString, currValidNTs){
-				return nil, fmt.Errorf("invalid non-terminal \"%s\" at index %d", string(ntString), i)
+			currNT := inputProductions[currTokenStart:lookAheadIndex]
+			if !nonTerminalMatches(currNT, currValidNTs) {
+				return nil, fmt.Errorf("[convertProductions] invalid non-terminal %s at index %d", string(currNT), i)
 			}
 
-			production = append(production, RuleToken{tokenType: NON_TERMINAL, value: ntString})
-			ntStart = -1
+			production = append(production, RuleToken{tokenType: NON_TERMINAL, value: currNT})
+			currTokenStart = -1
 			continue
 		}
 		currValidNTs = tmpValidNTs
 	}
-	
-	if(isTerminal){
-		return nil, fmt.Errorf("end of rule reached without closing \"")
+
+	if isTerminal {
+		return nil, fmt.Errorf("[convertProductions] end of rule reached without closing \"")
+	}
+
+	if currTokenStart != -1 {
+		return nil, fmt.Errorf("[convertProductions] end of rule reached without closing ]")
 	}
 
 	productions = append(productions, production)
@@ -135,12 +185,16 @@ func ConvertProductions(rule string, validNTs []string) ([][]RuleToken, error) {
 	return productions, nil
 }
 
+func convertRange(inputRange []rune) ([]RuneRange, error) {
+	
+}
+
 /*
 NTLookAhead will take the string p and check if the character at an index matches any NT at the same index.
 */
 func nonTerminalLookAhead(p []rune, index int, allNTs [][]rune) [][]rune {
 	validNTs := make([][]rune, 0)
-	if len(p) <= index{
+	if len(p) <= index {
 		return validNTs
 	}
 
@@ -153,7 +207,7 @@ func nonTerminalLookAhead(p []rune, index int, allNTs [][]rune) [][]rune {
 }
 
 func nonTerminalMatches(nt []rune, validNTs [][]rune) bool {
-	for _, validNT := range validNTs{
+	for _, validNT := range validNTs {
 		if slices.Equal(nt, validNT) {
 			return true
 		}
