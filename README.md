@@ -14,7 +14,7 @@ If you would like to chain multiple errors together separate each one by a \n an
 
 ### Production Rules
 #### Ranges
-Note: In order to use the carrot `^` in a range, please escape it like so `\^`
+Note: In order to use the carrot `^` or `-` in a range, please escape it like so `\^`
 
 In order to easily use a range of characters in a production, you can use square brackets with a range inside like so:
 
@@ -33,3 +33,14 @@ By default, taking the opposite will use the range $0-2^{31}$ as the language bu
 `[{a-z}^g]`
 
 Note: While specifying a range for the language is possible for non inverting (not using `^`) ranges, it will not do anything and should be avoided.
+
+Grammar for Ranges:
+```
+P -> "["E"]"
+E -> "{"ToRange"}"InvertibleRange | InvertibleRange
+InvertibleRange -> Range | "^"Range
+Range -> CharRange | ToRange
+CharRange -> v*
+ToRange -> v"-"v
+v -> all characters
+```

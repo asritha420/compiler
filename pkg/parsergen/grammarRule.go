@@ -186,6 +186,7 @@ func convertProductions(inputProductions []rune, validNTs [][]rune) ([][]RuleTok
 }
 
 func convertRange(inputRange []rune) ([]RuneRange, error) {
+	languageRange := RuneRange{0, RUNE_MAX}
 	
 }
 
