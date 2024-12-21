@@ -94,12 +94,12 @@ func convertProductions(inputProductions []rune, validNTs [][]rune) ([][]RuleTok
 	for i, ch := range inputProductions {
 		if isRange {
 			// check for end of range
-			if ch != ']'{
+			if ch != ']' {
 				continue
 			}
 			isRange = false
 			currRange := inputProductions[currTokenStart:i]
-			
+			convertRange(currRange)
 		}
 		if isEscaped {
 			if ch != '"' && ch != '\\' {
@@ -186,8 +186,8 @@ func convertProductions(inputProductions []rune, validNTs [][]rune) ([][]RuleTok
 }
 
 func convertRange(inputRange []rune) ([]RuneRange, error) {
-	languageRange := RuneRange{0, RUNE_MAX}
-	
+	// languageRange := RuneRange{0, RUNE_MAX}
+	return nil, nil
 }
 
 /*

@@ -40,7 +40,7 @@ func minimizeRanges(ranges []RuneRange) []RuneRange {
 	return outputRanges
 }
 
-func MakeRangesThatIgnore(min rune, max rune, ignore ...rune) []RuneRange {
+func makeRangesThatIgnore(min rune, max rune, ignore ...rune) []RuneRange {
 	slices.SortFunc(ignore, func(a,b rune) int {
 		return int(a-b)
 	})

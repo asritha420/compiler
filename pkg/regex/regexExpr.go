@@ -1,4 +1,4 @@
-package scannergen
+package regex
 
 import (
 	"fmt"

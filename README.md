@@ -13,8 +13,25 @@ If you would like to chain multiple errors together separate each one by a \n an
 `fmt.Errorf("[main] failed to convert rule because:\n%w", err)`
 
 ### Production Rules
+#### Grammar
+```
+P -> Rule("\n"Rule)*
+Rule -> WS* NT WS* "->" WS*Prod("|"Prod)*WS*
+Prod -> Token*
+Token -> WS*(NonTerm | Term | Range)WS*
+NonTerm -> [^ \n\t\"[]]*
+Term -> "\""[^]*"\""
+
+Range -> "[" ("{"TRange"}"ICTRange | ICTRange) "]"
+ICTRange -> CTRange | "^"CTRange
+CTRange -> CharRange | ToRange
+CRange -> V*
+TRange -> V"-"V
+```
+Note: V is all characters and WS is all white space characters.
+
 #### Ranges
-Note: In order to use the carrot `^` or `-` in a range, please escape it like so `\^`
+Note: In order to use `^`, `-`, `{`, or `}` in a range, please escape it.
 
 In order to easily use a range of characters in a production, you can use square brackets with a range inside like so:
 
