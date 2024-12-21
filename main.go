@@ -51,8 +51,8 @@ func main() {
 	// 	fmt.Print(t)
 	// }
 
-	ranges := parsergen.MakeRangesThatIgnore(0, 100, 'a','f','9', parsergen.RUNE_MAX-1)
-	fmt.Print(ranges)
+	// ranges := parsergen.MakeRangesThatIgnore(0, 100, 'a','f','9', parsergen.RUNE_MAX-1)
+	// fmt.Print(ranges)
 
 }
 

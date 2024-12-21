@@ -24,7 +24,7 @@ Term -> "\""[^]*"\""
 
 Range -> "[" ("{"TRange"}"ICTRange | ICTRange) "]"
 ICTRange -> CTRange | "^"CTRange
-CTRange -> CharRange | ToRange
+CTRange -> CRange | TRange
 CRange -> V*
 TRange -> V"-"V
 ```
@@ -61,3 +61,71 @@ CharRange -> v*
 ToRange -> v"-"v
 v -> all characters
 ```
+
+
+Option 1: In Go
+```
+type tokenName = string
+type tokenRegex = string
+
+type TType int
+
+type TokenInfo struct {
+    Id TType
+    Name TokenName
+    Regex TokenRegex 
+    fa State 
+}
+
+type Scanner struct {   
+    tokens []TokenInfo //order in terms of priority 
+}
+
+type Expr struct {}
+type Constant struct {}
+type Node struct {
+}
+
+type FAConverter interface {
+    convert func()*State, *State //start, end 
+}
+
+func (s *Scanner) convertTokenRegexToDFA {
+     for k,v := range tokens {
+       //function that calls recursive descent parser 
+       parseTree := getParseTree(v)
+       fa := parseTree.getFA().removeLambdas().convertToPseudoDFA().minimize()
+       tokenFA[k] = fa 
+     }
+}
+
+type Token struct {
+    id TType
+    lexeme string 
+    line uint 
+}
+
+func (s *Scanner) Scan(file) []Token { 
+    //go through the file
+    //start at first character, go through list of fas in priority order until it finds a match or hits dead state in all of them
+        if dead state in all of them, then theres a source code error
+        if a match, create a Token w/ all the fields, and append to token return array. 
+    repeat until it reaches the EOF character. }
+
+func main() {
+    //user has to define the enum 
+    s := Scanner{
+        tokens: map[tokenName]tokenRegex { 
+            "for": "for", 
+            "identifier": "[a-z]([a-z]|[0-9])*"
+        }
+    } //initialize scanner
+    s.convertTokenRegexToDFA() //do this in a NewScanner Function, that the user doesnt have to call it 
+
+    s.Scan(file) //take in source code file 
+}
+```
+
+
+Option 2: In File 
+
