@@ -20,6 +20,17 @@ func NewNFAState(id *uint) *NFAState {
 	return state
 }
 
+func newPseudoDFAState(id *uint, accepting bool) *NFAState {
+	state := &NFAState{
+		id: *id,
+		transitions: make(map[rune][]*NFAState),
+		isAccepting: accepting,
+		isPseudoDFA: true,
+	}
+	*id++
+	return state
+}
+
 func (state *NFAState) GetId() uint {
 	return state.id
 }

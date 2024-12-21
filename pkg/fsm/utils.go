@@ -43,7 +43,7 @@ isAccepting will check if any of the states in a class are accepting.
 */
 func isAccepting(states ...*NFAState) bool {
 	for _, state := range states {
-		if state.IsAccepting() {
+		if state.isAccepting {
 			return true
 		}
 	}
@@ -65,21 +65,17 @@ func idsToString[T any](ids map[uint]T) string {
 type openListEntry struct {
 	NFAstates   []*NFAState
 	transitions map[rune]struct{}
-	state       *DFAState
+	state       *NFAState
 }
 
-func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState) {
+func ConvertNFAtoPseudoDFA(initialNFAState *NFAState) (*NFAState, map[string]*NFAState) {
 	var id uint = 0
-	DFAStates := make(map[string]*DFAState)
+	DFAStates := make(map[string]*NFAState)
 	openList := make([]openListEntry, 0)
 
 	initialNFAClass, initialNFAClassIds, transitions := epsilonClosureAndTransitions(initialNFAState)
-	initialDFAState := &DFAState{
-		id:          id,
-		transitions: make(map[rune]*DFAState),
-		isAccepting: isAccepting(initialNFAClass...),
-	}
-	id++
+	
+	initialDFAState := newPseudoDFAState(&id, isAccepting(initialNFAClass...))
 
 	DFAStates[idsToString(initialNFAClassIds)] = initialDFAState
 	openList = append(openList, openListEntry{
@@ -111,12 +107,7 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 			// check if the transition leads to existing DFA
 			if !ok {
 				// if not make DFA state and add transition to open list
-				transitionDFAState = &DFAState{
-					id:          id,
-					transitions: make(map[rune]*DFAState),
-					isAccepting: isAccepting(transitionNFAClass...),
-				}
-				id++
+				transitionDFAState = newPseudoDFAState(&id, isAccepting(transitionNFAClass...))
 
 				openList = append(openList, openListEntry{
 					NFAstates:   transitionNFAClass,
@@ -128,7 +119,7 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 			}
 
 			// connect transition DFA to current DFA
-			currentEntry.state.transitions[transition] = transitionDFAState
+			currentEntry.state.AddTransition(transition, transitionDFAState)
 		}
 	}
 
@@ -137,11 +128,11 @@ func ConvertNFAtoDFA(initialNFAState *NFAState) (*DFAState, map[string]*DFAState
 
 type DFAClass struct {
 	transitions map[rune]*DFAClass
-	states      map[uint]*DFAState
+	states      map[uint]*NFAState
 	isAccepting bool
 }
 
-func findDFAClassFromState(state *DFAState, classes []*DFAClass) *DFAClass {
+func findDFAClassFromState(state *NFAState, classes []*DFAClass) *DFAClass {
 	for _, class := range classes {
 		if _, ok := class.states[state.id]; ok {
 			return class
@@ -166,14 +157,14 @@ func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
 	for _, state := range class.states {
 		transitions := make(map[rune]*DFAClass)
 		for key, transition := range state.transitions {
-			transitions[key] = findDFAClassFromState(transition, classes)
+			transitions[key] = findDFAClassFromState(transition[0], classes)
 		}
 		if transitionClass := findDFAClassFromTransitions(transitions, new_classes); transitionClass != nil {
 			transitionClass.states[state.id] = state
 		} else {
 			new_classes = append(new_classes, &DFAClass{
 				transitions: transitions,
-				states: map[uint]*DFAState{
+				states: map[uint]*NFAState{
 					state.id: state,
 				},
 				isAccepting: class.isAccepting,
@@ -184,14 +175,14 @@ func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
 	return new_classes
 }
 
-func MinimizeDFA(initialStateId uint, states []*DFAState) *DFAState {
+func MinimizeDFA(initialStateId uint, states []*NFAState) *NFAState {
 	// Partition into accepting and non-accepting
 	nonaccepting := &DFAClass{
-		states:      make(map[uint]*DFAState),
+		states:      make(map[uint]*NFAState),
 		isAccepting: false,
 	}
 	accepting := &DFAClass{
-		states:      make(map[uint]*DFAState),
+		states:      make(map[uint]*NFAState),
 		isAccepting: true,
 	}
 
@@ -225,13 +216,14 @@ func MinimizeDFA(initialStateId uint, states []*DFAState) *DFAState {
 	}
 
 	// create all states
-	classToState := make(map[string]*DFAState)
-	var initialDFAState *DFAState
+	classToState := make(map[string]*NFAState)
+	var initialDFAState *NFAState
 	for i, class := range classes {
-		state := &DFAState{
+		state := &NFAState{
 			id:          uint(i),
 			isAccepting: class.isAccepting,
-			transitions: make(map[rune]*DFAState),
+			transitions: make(map[rune][]*NFAState),
+			isPseudoDFA: true,
 		}
 		classToState[idsToString(class.states)] = state
 		if _, ok := class.states[initialStateId]; ok {
@@ -242,7 +234,7 @@ func MinimizeDFA(initialStateId uint, states []*DFAState) *DFAState {
 	// link states
 	for _, class := range classes {
 		for transition, transitionClass := range class.transitions {
-			classToState[idsToString(class.states)].transitions[transition] = classToState[idsToString(transitionClass.states)]
+			classToState[idsToString(class.states)].AddTransition(transition, classToState[idsToString(transitionClass.states)])
 		}
 	}
 
