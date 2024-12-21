@@ -70,7 +70,7 @@ type tokenRegex = string
 
 type TType int
 
-type TokenInfo struct {
+type TokenInfo struct { //called TokenInitInfo 
     Id TType
     Name TokenName
     Regex TokenRegex 
@@ -113,7 +113,7 @@ func (s *Scanner) Scan(file) []Token {
     repeat until it reaches the EOF character. }
 
 func main() {
-    //user has to define the enum 
+    //user must also initialize TokenType w/ Enum -> how?  
     s := Scanner{
         tokens: map[tokenName]tokenRegex { 
             "for": "for", 
