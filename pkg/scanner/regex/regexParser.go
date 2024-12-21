@@ -1,4 +1,4 @@
-package scannergen
+package scanner
 
 //
 //import (
@@ -6,8 +6,8 @@ package scannergen
 //	"fmt"
 //)
 //
-//// RegexParser will consume a regex string and return an AST
-//type RegexParser struct {
+//// regexParser will consume a regex string and return an AST
+//type regexParser struct {
 //	grammar *parsergen.LL1Grammar
 //	regex   string
 //	index   int //index points to the current unconsumed byte in regex
@@ -164,9 +164,9 @@ package scannergen
 //		return e, nil
 //	}
 //
-//// 	if b, ok := p.consumeIf(p.grammar.FirstSet['G']...); ok {
-//// 		return NewConst(*b), nil
-//// 	}
+//	if b, ok := p.consumeIf(p.grammar.FirstSet['G']...); ok {
+//		return NewConst(*b), nil
+//	}
 //
-//// 	return nil, fmt.Errorf("parse error: unexpected byte %c", p.regex[p.index])
-//// }
+//	return nil, fmt.Errorf("parse error: unexpected byte %c", p.regex[p.index])
+//}

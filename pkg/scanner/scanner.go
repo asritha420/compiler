@@ -1,12 +1,21 @@
 package scanner
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Scanner struct {
 	tInitInfos []*TokenInitInfo
 }
 
 func (s *Scanner) convertTokenRegexToFA() {
+	for _, tII := range s.tInitInfos {
+
+	}
+}
+
+// TODO: move these helper methods somewhere else ?
+func convertRegexToParseTree(regex string) *RExpr {
 
 }
 
@@ -18,7 +27,6 @@ func NewScanner(tInitInfos []*TokenInitInfo) *Scanner {
 	s := &Scanner{
 		tInitInfos: tInitInfos,
 	}
-
 	s.convertTokenRegexToFA()
 	return s
 }
