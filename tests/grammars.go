@@ -9,7 +9,7 @@ func tests() {
 	//parsergen.NewLL1Grammar(
 	//	map[byte][]string{
 	//		'P': {"E"},
-	//		'E': {"TX"},
+	//		'E': {"TX"},transitions[transition] =
 	//		'X': {"|TX", parsergen.Epsilon},
 	//		'T': {"FY"},
 	//		'Y': {"FY", parsergen.Epsilon},
