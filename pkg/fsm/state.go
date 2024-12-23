@@ -26,8 +26,8 @@ func (state *NFAState) GetId() uint {
 
 func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
 	if _, ok := state.transitions[transition]; !ok {
-		state.transitions[transition] = make([]*NFAState, len(newStates))
-	} 
+		state.transitions[transition] = make([]*NFAState, 0)
+	}
 
 	state.transitions[transition] = append(state.transitions[transition], newStates...)
 }

@@ -133,13 +133,13 @@ func ConvertNFAtoPseudoDFA(initialState *NFAState) (*NFAState, map[string]*NFASt
 	return initialPseudoDFAState, pseudoDFAStates
 }
 
-type DFAClass struct {
-	transitions map[rune]*DFAClass
+type pseudoDFAClass struct {
+	transitions map[rune]*pseudoDFAClass
 	states      map[uint]*NFAState
 	isAccepting bool
 }
 
-func findDFAClassFromState(state *NFAState, classes []*DFAClass) *DFAClass {
+func findDFAClassFromState(state *NFAState, classes []*pseudoDFAClass) *pseudoDFAClass {
 	for _, class := range classes {
 		if _, ok := class.states[state.id]; ok {
 			return class
@@ -149,7 +149,7 @@ func findDFAClassFromState(state *NFAState, classes []*DFAClass) *DFAClass {
 	return nil
 }
 
-func findDFAClassFromTransitions(transitions map[rune]*DFAClass, classes []*DFAClass) *DFAClass {
+func findDFAClassFromTransitions(transitions map[rune]*pseudoDFAClass, classes []*pseudoDFAClass) *pseudoDFAClass {
 	for _, class := range classes {
 		if reflect.DeepEqual(class.transitions, transitions) {
 			return class
@@ -159,17 +159,17 @@ func findDFAClassFromTransitions(transitions map[rune]*DFAClass, classes []*DFAC
 	return nil
 }
 
-func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
-	new_classes := make([]*DFAClass, 0)
+func makeDFAClasses(class *pseudoDFAClass, classes []*pseudoDFAClass) []*pseudoDFAClass {
+	new_classes := make([]*pseudoDFAClass, 0)
 	for _, state := range class.states {
-		transitions := make(map[rune]*DFAClass)
+		transitions := make(map[rune]*pseudoDFAClass)
 		for key, transition := range state.transitions {
 			transitions[key] = findDFAClassFromState(transition[0], classes)
 		}
 		if transitionClass := findDFAClassFromTransitions(transitions, new_classes); transitionClass != nil {
 			transitionClass.states[state.id] = state
 		} else {
-			new_classes = append(new_classes, &DFAClass{
+			new_classes = append(new_classes, &pseudoDFAClass{
 				transitions: transitions,
 				states: map[uint]*NFAState{
 					state.id: state,
@@ -184,11 +184,11 @@ func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
 
 func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFAState, map[string]*NFAState) {
 	// Partition into accepting and non-accepting
-	nonaccepting := &DFAClass{
+	nonaccepting := &pseudoDFAClass{
 		states:      make(map[uint]*NFAState),
 		isAccepting: false,
 	}
-	accepting := &DFAClass{
+	accepting := &pseudoDFAClass{
 		states:      make(map[uint]*NFAState),
 		isAccepting: true,
 	}
@@ -203,7 +203,7 @@ func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFASt
 
 	accepting.isAccepting = true
 
-	classes := []*DFAClass{
+	classes := []*pseudoDFAClass{
 		accepting,
 		nonaccepting,
 	}
@@ -211,7 +211,7 @@ func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFASt
 	modified := true
 	for modified {
 		modified = false
-		newClasses := make([]*DFAClass, 0)
+		newClasses := make([]*pseudoDFAClass, 0)
 		for _, class := range classes {
 			seperatedClasses := makeDFAClasses(class, classes)
 			if len(seperatedClasses) != 1 {
@@ -225,12 +225,9 @@ func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFASt
 	// create all states
 	classToState := make(map[string]*NFAState)
 	var initialDFAState *NFAState
-	for i, class := range classes {
-		state := &NFAState{
-			id:          uint(i),
-			accepting: class.isAccepting,
-			transitions: make(map[rune][]*NFAState),
-		}
+	var i uint = 0
+	for _, class := range classes {
+		state := NewNFAState(&i, class.isAccepting)
 		classToState[idsToString(class.states)] = state
 		if _, ok := class.states[initialStateId]; ok {
 			initialDFAState = state

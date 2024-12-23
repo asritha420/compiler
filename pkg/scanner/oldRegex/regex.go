@@ -1,11 +1,12 @@
 package regex
 
 import (
-	"asritha.dev/compiler/pkg/fsm"
 	"fmt"
+
+	"asritha.dev/compiler/pkg/fsm"
 )
 
-func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*fsm.NFAState, id *uint) (*fsm.NFAState, *fsm.NFAState, error) {
+func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*fsm.FAState, id *uint) (*fsm.FAState, *fsm.FAState, error) {
 	switch rootNode := regexASTRootNode.(type) {
 	case *Concatenation:
 		lNFAState, lNFALastState, err := convertRegexToNfaRecursion(rootNode.Left, idToState, id)
@@ -53,7 +54,7 @@ func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*fsm.
 		end := fsm.NewNFAState(id, false)
 		idToState[*id] = end
 
-		start.AddTransition(fsm.Epsilon, NFAStartState, end)	
+		start.AddTransition(fsm.Epsilon, NFAStartState, end)
 		NFALastState.AddTransition(fsm.Epsilon, end)
 		end.AddTransition(fsm.Epsilon, start)
 
@@ -73,8 +74,8 @@ func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*fsm.
 	}
 }
 
-func ConvertRegexToNfa(regexASTRootNode RExpr) (*fsm.NFAState, *fsm.NFAState, map[uint]*fsm.NFAState, error) {
-	idMap := make(map[uint]*fsm.NFAState)
+func ConvertRegexToNfa(regexASTRootNode RExpr) (*fsm.FAState, *fsm.FAState, map[uint]*fsm.FAState, error) {
+	idMap := make(map[uint]*fsm.FAState)
 	var idVar uint
 	start, end, err := convertRegexToNfaRecursion(regexASTRootNode, idMap, &idVar)
 	if err != nil {
