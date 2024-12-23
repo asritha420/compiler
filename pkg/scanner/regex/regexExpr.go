@@ -15,13 +15,18 @@ const (
 type RExpr interface {
 }
 
+type String interface {
+	String() string
+}
+
+// TODO add error handling?
 type ASTPrinter interface {
 	PrintNode(indent string) string
 }
 
 // TODO: write algorithm name in comment here, comment explaining what it does?
 type NFAConverter interface {
-	convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.NFAState) //start, end, create aliases?
+	convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) //start, end, create aliases?
 }
 
 type NFAPrinter interface {
@@ -29,76 +34,74 @@ type NFAPrinter interface {
 }
 
 type Const struct {
-	Value rune
+	value rune
 }
 
 func NewConst(value rune) *Const {
-	return &Const{Value: value}
+	return &Const{value: value}
 }
 
 func (c *Const) String() string {
-	return fmt.Sprintf("%c", c.Value)
+	return fmt.Sprintf("%c", c.value)
 }
 
 func (c *Const) PrintNode(indent string) string {
-	return fmt.Sprintf("%sConst { %c }", indent, c.Value)
+	return fmt.Sprintf("%sConst { %c }", indent, c.value)
 }
 
-// TODO: right now all of the IsAccepting is false, fix later
-func (c *Const) convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.NFAState) {
-	endState := &scanner.NFAState{
-		FAState: scanner.FAState{
-			Id:          idCounter + 2,
-			IsAccepting: false,
-		},
-		Transitions: make(map[rune][]*scanner.NFAState),
-	}
-	startState := &scanner.NFAState{
-		FAState: scanner.FAState{
-			Id:          idCounter + 1,
-			IsAccepting: false,
-		},
-		Transitions: map[rune][]*scanner.NFAState{
-			c.Value: []*scanner.NFAState{
-				endState,
-			},
-		},
-	}
-	return startState, endState
+func (c *Const) convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) { 
+	startState := scanner.NewNFAState(idCounter, false)
+	endState := scanner.NewNFAState(idCounter, true)
+	startState.AddTransition(c.value, endState)
+
+	return startState, endState, nil
 }
 
 type Alternation struct { // left | right
-	Left  RExpr
-	Right RExpr
+	left  RExpr
+	right RExpr
 }
 
 func NewAlternation(left RExpr, right RExpr) *Alternation {
-	return &Alternation{Left: left, Right: right}
+	return &Alternation{left: left, right: right}
 }
 
 func (a *Alternation) String() string {
-	return fmt.Sprintf("%s|%s", a.Left, a.Right)
+	return fmt.Sprintf("%s|%s", a.left, a.right)
 }
 
 func (a *Alternation) PrintNode(indent string) string {
-	if left, ok := a.Left.(ASTPrinter); ok {
-		if right, ok := a.Right.(ASTPrinter); ok {
-			return fmt.Sprintf(
-				"%sAlternation {\n%v,\n%v\n%s}",
-				indent, left.PrintNode(indent+"  "),
-				right.PrintNode(indent+"  "),
-				indent,
-			)
-		}
+	left, ok := a.left.(ASTPrinter)
+	if !ok {
+		return fmt.Sprintf("%sERROR PRINTING LEFT ALTERNATION", indent)
 	}
-	return fmt.Sprintf("%sERROR PRINTING ALTERNATION", indent)
+
+	right, ok := a.right.(ASTPrinter)
+	if(!ok){
+		return fmt.Sprintf("%sERROR PRINTING RIGHT ALTERNATION", indent)
+	}
+	
+	return fmt.Sprintf(
+		"%sAlternation {\n%v,\n%v\n%s}",
+		indent, left.PrintNode(indent+"  "),
+		right.PrintNode(indent+"  "),
+		indent,
+	) 
 }
 
-func (a *Alternation) convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.NFAState) {
-	if left, ok := a.Left.(NFAConverter); ok {
-		if right, ok := a.Right.(NFAConverter); ok {
-			leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter)
-			rightNFAStartState, rightNFAEndState := right.convertToNFA(idCounter)
+// TODO add proper errors
+func (a *Alternation) convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) {
+	left, ok := a.left.(NFAConverter)
+	if(!ok){
+		return nil, nil, fmt.Errorf("left fail")
+	}
+	right, ok := a.right.(NFAConverter)
+	if(!ok){
+		return nil, nil, fmt.Errorf("right fail")
+	}
+	
+	leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter)
+	rightNFAStartState, rightNFAEndState := right.convertToNFA(idCounter)
 			startState := &scanner.NFAState{
 				FAState: scanner.FAState{
 					Id:          idCounter + 1,

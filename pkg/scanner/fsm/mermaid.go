@@ -7,7 +7,7 @@ import (
 
 func makeMermaidIdString(state *NFAState) string {
 	id := fmt.Sprintf("id%d", state.id)
-	if state.IsAccepting() {
+	if state.accepting {
 		id += fmt.Sprintf("(((%d)))", state.id)
 	} else {
 		id += fmt.Sprintf("((%d))", state.id)
