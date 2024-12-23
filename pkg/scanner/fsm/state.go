@@ -1,21 +1,41 @@
 package scanner
 
-type FAState struct {
-	Id          uint
-	IsAccepting bool
-}
+const (
+	Epsilon = 0x00
+)
 
 type NFAState struct {
-	FAState     //TODO: make this a pointer?
-	Transitions map[rune][]*NFAState
+	id          uint
+	transitions map[rune][]*NFAState
+	accepting bool
 }
 
-type DFAState struct {
-	FAState
-	transitions []*DFATransition // If a character in the alphabet does not have an explicit transition, it is assumed to lead to a dead state by default
+func NewNFAState(id *uint, accepting bool) *NFAState {
+	state := &NFAState{
+		id: *id,
+		transitions: make(map[rune][]*NFAState),
+		accepting: accepting,
+	}
+	*id++
+	return state
 }
 
-type DFATransition struct {
-	characterClass []rune
-	pointingTo     *DFAState
+func (state *NFAState) GetId() uint {
+	return state.id
+}
+
+func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
+	if _, ok := state.transitions[transition]; !ok {
+		state.transitions[transition] = make([]*NFAState, 0)
+	}
+
+	state.transitions[transition] = append(state.transitions[transition], newStates...)
+}
+
+func (state *NFAState) SetAccepting(accepting bool) {
+	state.accepting = accepting
+}
+
+func (state *NFAState) IsAccepting() bool {
+	return state.accepting
 }

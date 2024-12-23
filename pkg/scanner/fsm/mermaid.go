@@ -1,4 +1,4 @@
-package fsm
+package scanner
 
 import (
 	"fmt"
