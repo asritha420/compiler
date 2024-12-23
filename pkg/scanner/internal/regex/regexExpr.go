@@ -2,13 +2,7 @@ package regex
 
 import (
 	"asritha.dev/compiler/pkg/scanner/internal/fsm"
-	_	"asritha.dev/compiler/pkg/scanner/internal/fsm"
 	"fmt"
-)
-
-// separate out the types, printer, nfa converter into seperate files
-const (
-	epsilon rune = 0
 )
 
 // RExpr is implemented by all types automatically
@@ -24,13 +18,9 @@ type ASTPrinter interface {
 	PrintNode(indent string) string
 }
 
-// TODO: write algorithm name in comment here, comment explaining what it does?
+// Implements Thompson's Algorithm 
 type NFAConverter interface {
 	convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) //start, end, create aliases?
-}
-
-type NFAPrinter interface {
-	//printmermaidNFA()
 }
 
 type Const struct {
@@ -100,37 +90,25 @@ func (a *Alternation) convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAStat
 		return nil, nil, fmt.Errorf("right fail")
 	}
 	
-	leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter)
-	rightNFAStartState, rightNFAEndState := right.convertToNFA(idCounter)
-			startState := &fsm.NFAState{
-				FAState: fsm.FAState{
-					Id:          idCounter + 1,
-					IsAccepting: false,
-				},
-				Transitions: map[rune][]*fsm.NFAState{
-					epsilon: []*fsm.NFAState{
-						leftNFAStartState,
-						rightNFAStartState,
-					},
-				},
-			}
-			endState := &fsm.NFAState{
-				FAState: fsm.FAState{
-					Id:          idCounter + 1,
-					IsAccepting: true,
-				},
-				Transitions: make(map[rune][]*fsm.NFAState),
-			}
-			rightNFAEndState.IsAccepting = false
-			leftNFAEndState.IsAccepting = false
-
-			rightNFAEndState.Transitions[epsilon] = append(rightNFAEndState.Transitions[epsilon], endState)
-			leftNFAEndState.Transitions[epsilon] = append(leftNFAEndState.Transitions[epsilon], endState)
-
-			return startState, endState
-		}
+	leftNFAStartState, leftNFAEndState, err := left.convertToNFA(idCounter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("left fail")
 	}
-	return nil, nil
+	leftNFAEndState.IsAccepting = false
+	rightNFAStartState, rightNFAEndState, err := right.convertToNFA(idCounter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("right fail")
+	}
+	rightNFAEndState.IsAccepting = false
+
+	startState := fsm.NewNFAState(idCounter, false)
+	endState := fsm.NewNFAState(idCounter, true)
+
+	startState.AddTransition(fsm.Epsilon, leftNFAStartState, rightNFAStartState)
+	leftNFAEndState.AddTransition(fsm.Epsilon, endState)
+	rightNFAEndState.AddTransition(fsm.Epsilon, endState)
+
+	return startState, endState, nil
 }
 
 type Concatenation struct { // left right
@@ -147,39 +125,47 @@ func (c *Concatenation) String() string {
 }
 
 func (c *Concatenation) PrintNode(indent string) string {
-	if left, ok := c.Left.(ASTPrinter); ok {
-		if right, ok := c.Right.(ASTPrinter); ok {
-			return fmt.Sprintf(
-				"%sConcatenation {\n%v,\n%v\n%s}",
-				indent, left.PrintNode(indent+"  "),
-				right.PrintNode(indent+"  "),
-				indent,
-			)
-		}
+	left, ok := c.Left.(ASTPrinter)
+	if !ok {
+		return fmt.Sprintf("%sERROR PRINTING LEFT CONCATENATION", indent)
 	}
-	return fmt.Sprintf("%sERROR PRINTING CONCATENATION", indent)
+	right, ok := c.Right.(ASTPrinter)
+	if !ok {
+		return fmt.Sprintf("%sERROR PRINTING RIGHT CONCATENATION", indent)
+	}
+
+	return fmt.Sprintf(
+		"%sConcatenation {\n%v,\n%v\n%s}",
+		indent, left.PrintNode(indent+"  "),
+		right.PrintNode(indent+"  "),
+		indent,
+	) 
 }
 
-func (c *Concatenation) convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.NFAState) {
-	if left, ok := c.Left.(NFAConverter); ok {
-		if right, ok := c.Right.(NFAConverter); ok {
-			//TODO: change the leftNFAEndState to not be final here, and in each corresponding function?
-			leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter) //TODO: the idCounter is not being handled properly, return it everywhere and then increment by 1?
-			rightNFAStartState, rightNFAEndState := right.convertToNFA(idCounter)
-			leftNFAStartState.IsAccepting = false
-			rightNFAEndState.IsAccepting = true
-			leftNFAEndState.Transitions[epsilon] = append(leftNFAStartState.Transitions[epsilon], rightNFAStartState)
-
-			return leftNFAStartState, rightNFAEndState
-		} else {
-			fmt.Println("Right part is invalid")
-			//TODO: put in better error handling everywhere instead of just printing it
-		}
-	} else {
-		fmt.Println("Left part is invalid")
+func (c *Concatenation) convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) {
+	left, ok := c.Left.(NFAConverter)
+	if(!ok){
+		return nil, nil, fmt.Errorf("left fail")
 	}
-	return nil, nil
-}
+	right, ok := c.Right.(NFAConverter)
+	if(!ok){
+		return nil, nil, fmt.Errorf("right fail")
+	}
+
+	leftNFAStartState, leftNFAEndState, err := left.convertToNFA(idCounter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("left fail")
+	}
+	leftNFAEndState.IsAccepting = false
+	rightNFAStartState, rightNFAEndState, err := right.convertToNFA(idCounter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("right fail")
+	}
+
+	leftNFAEndState.AddTransition(fsm.Epsilon, rightNFAStartState)
+
+	return leftNFAStartState, rightNFAEndState, nil
+}	
 
 type KleeneStar struct { // left*
 	Left RExpr
@@ -204,40 +190,24 @@ func (ks *KleeneStar) PrintNode(indent string) string {
 	return fmt.Sprintf("%sERROR PRINTING KLEENE_STAR", indent)
 }
 
-func (ks *KleeneStar) convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.NFAState) {
-	if left, ok := ks.Left.(NFAConverter); ok {
-		leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter)
-
-		leftNFAEndState.IsAccepting = false
-
-		startState := &fsm.NFAState{
-			FAState: fsm.FAState{
-				Id:          idCounter + 1,
-				IsAccepting: false,
-			},
-			Transitions: map[rune][]*fsm.NFAState{
-				epsilon: []*fsm.NFAState{
-					leftNFAStartState,
-				},
-			},
-		}
-		endState := &fsm.NFAState{
-			FAState: fsm.FAState{
-				Id:          idCounter + 1,
-				IsAccepting: true,
-			},
-			Transitions: make(map[rune][]*fsm.NFAState),
-		}
-
-		//TODO: the below two prolly dont have to be separate, can blend together
-		startState.Transitions[epsilon] = append(startState.Transitions[epsilon], endState)
-		endState.Transitions[epsilon] = append(endState.Transitions[epsilon], startState)
-
-		leftNFAEndState.Transitions[epsilon] = append(leftNFAEndState.Transitions[epsilon], endState)
-
-		return startState, endState
+func (ks *KleeneStar) convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) {
+	left, ok := ks.Left.(NFAConverter)
+	if(!ok){
+		return nil, nil, fmt.Errorf("left fail")
 	}
-	return nil, nil
-}
 
-//TODO: make a mermaid js thing for this
+	childNFAStartState, childNFAEndState, err := left.convertToNFA(idCounter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("left fail")
+	}
+	childNFAEndState.IsAccepting = false
+	
+	startState := fsm.NewNFAState(idCounter, false)
+	endState := fsm.NewNFAState(idCounter, true)
+
+	startState.AddTransition(fsm.Epsilon, childNFAStartState, endState)
+	childNFAEndState.AddTransition(fsm.Epsilon, endState)
+	endState.AddTransition(fsm.Epsilon, startState)
+
+	return startState, endState, nil
+}

@@ -12,19 +12,19 @@ epsilonClosureAndTransitionsRecursion is the recursive method that will take an 
 */
 func epsilonClosureAndTransitionsRecursion(state *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) []*NFAState {
 	// check if we already found closure of state and add to closed list
-	if _, ok := closed[state.Id]; ok {
+	if _, ok := closed[state.id]; ok {
 		return states
 	}
-	closed[state.Id] = struct{}{}
+	closed[state.id] = struct{}{}
 
 	// add current state and transitions to output
 	states = append(states, state)
-	for t := range maps.Keys(state.Transitions) {
+	for t := range maps.Keys(state.transitions) {
 		transitions[t] = struct{}{}
 	}
 
 	// recurse into all states from epsilon transition
-	for _, s := range state.Transitions[Epsilon] {
+	for _, s := range state.transitions[Epsilon] {
 		states = epsilonClosureAndTransitionsRecursion(s, states, closed, transitions)
 	}
 
@@ -75,7 +75,7 @@ type openListEntry struct {
 	state       *NFAState
 }
 
-func convertNFAtoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
+func ConvertNFAtoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
 	var id uint = 0
 	pseudoDFAStates := make(map[string]*NFAState)
 	openList := make([]openListEntry, 0)
@@ -104,7 +104,7 @@ func convertNFAtoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
 			transitionNFASet := make([]*NFAState, 0)
 			// loop through all nodes in the current set and get all future nodes using the specific transition
 			for _, currentNFAState := range currentEntry.nfaStates {
-				transitionNFASet = append(transitionNFASet, currentNFAState.Transitions[transition]...)
+				transitionNFASet = append(transitionNFASet, currentNFAState.transitions[transition]...)
 			}
 
 			transitionNFASet, transitionNFASetIds, transitionNFASetTransitions := epsilonClosureAndTransitions(transitionNFASet...)
@@ -141,7 +141,7 @@ type pseudoDFAClass struct {
 
 func findDFAClassFromState(state *NFAState, classes []*pseudoDFAClass) *pseudoDFAClass {
 	for _, class := range classes {
-		if _, ok := class.states[state.Id]; ok {
+		if _, ok := class.states[state.id]; ok {
 			return class
 		}
 	}
@@ -163,16 +163,16 @@ func makeDFAClasses(class *pseudoDFAClass, classes []*pseudoDFAClass) []*pseudoD
 	new_classes := make([]*pseudoDFAClass, 0)
 	for _, state := range class.states {
 		transitions := make(map[rune]*pseudoDFAClass)
-		for key, transition := range state.Transitions {
+		for key, transition := range state.transitions {
 			transitions[key] = findDFAClassFromState(transition[0], classes)
 		}
 		if transitionClass := findDFAClassFromTransitions(transitions, new_classes); transitionClass != nil {
-			transitionClass.states[state.Id] = state
+			transitionClass.states[state.id] = state
 		} else {
 			new_classes = append(new_classes, &pseudoDFAClass{
 				transitions: transitions,
 				states: map[uint]*NFAState{
-					state.Id: state,
+					state.id: state,
 				},
 				isAccepting: class.isAccepting,
 			})
@@ -182,7 +182,7 @@ func makeDFAClasses(class *pseudoDFAClass, classes []*pseudoDFAClass) []*pseudoD
 	return new_classes
 }
 
-func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFAState, map[string]*NFAState) {
+func MinimizeDFA(initialStateId uint, states map[string]*NFAState) (*NFAState, map[string]*NFAState) {
 	// Partition into accepting and non-accepting
 	nonaccepting := &pseudoDFAClass{
 		states:      make(map[uint]*NFAState),
@@ -195,9 +195,9 @@ func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFASt
 
 	for _, state := range states {
 		if state.IsAccepting {
-			accepting.states[state.Id] = state
+			accepting.states[state.id] = state
 		} else {
-			nonaccepting.states[state.Id] = state
+			nonaccepting.states[state.id] = state
 		}
 	}
 
@@ -242,4 +242,12 @@ func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFASt
 	}
 
 	return initialDFAState, classToState
+}
+
+
+
+//TODO move to separate utility file
+func Remove[T any](s []T, i int) []T {
+    s[i] = s[len(s)-1]
+    return s[:len(s)-1]
 }

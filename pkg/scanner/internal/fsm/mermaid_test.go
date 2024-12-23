@@ -2,6 +2,8 @@ package fsm
 
 import "testing"
 
+
+
 func TestSimple(t *testing.T) {
 	var id uint = 0
 	s1 := NewNFAState(&id, false)
