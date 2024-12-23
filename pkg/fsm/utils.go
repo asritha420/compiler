@@ -10,29 +10,36 @@ import (
 /*
 epsilonClosureAndTransitionsRecursion is the recursive method that will take an initial state and find the class containing all reachable states solely by epsilon. It will also get the ids and possible transitions of the class.
 */
-func epsilonClosureAndTransitionsRecursion(initialState *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) ([]*NFAState) {
-	if _, ok := closed[initialState.id]; ok {
+func epsilonClosureAndTransitionsRecursion(state *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) ([]*NFAState) {
+	// check if we already found closure of state and add to closed list
+	if _, ok := closed[state.id]; ok {
 		return states
 	}
-	closed[initialState.id] = struct{}{}
-	states = append(states, initialState)
-	for t := range maps.Keys(initialState.transitions) {
+	closed[state.id] = struct{}{}
+
+	// add current state and transitions to output
+	states = append(states, state)
+	for t := range maps.Keys(state.transitions) {
 		transitions[t] = struct{}{}
 	}
-	for _, s := range initialState.transitions[Epsilon] {
+	
+	// recurse into all states from epsilon transition
+	for _, s := range state.transitions[Epsilon] {
 		states = epsilonClosureAndTransitionsRecursion(s, states, closed, transitions)
 	}
+
 	return states
 }
 
 /*
 epsilonClosureAndTransitions is a wrapper around epsilonClosureAndTransitionsRecursion which will get the class of states reachable solely by epsilon givin an initial class. It also returns the ids and possible transitions of the class.
 */
-func epsilonClosureAndTransitions(states ...*NFAState) ([]*NFAState, map[uint]struct{}, map[rune]struct{}) {
+func epsilonClosureAndTransitions(initialStates ...*NFAState) ([]*NFAState, map[uint]struct{}, map[rune]struct{}) {
 	allStates := make([]*NFAState, 0)
 	closed := make(map[uint]struct{})
 	transitions := make(map[rune]struct{})
-	for _, state := range states {
+	// for all input states run epsilon closure
+	for _, state := range initialStates {
 		allStates = epsilonClosureAndTransitionsRecursion(state, allStates, closed, transitions)
 	}
 	return allStates, closed, transitions
@@ -43,7 +50,7 @@ isAccepting will check if any of the states in a class are accepting.
 */
 func isAccepting(states ...*NFAState) bool {
 	for _, state := range states {
-		if state.isAccepting {
+		if state.accepting {
 			return true
 		}
 	}
@@ -63,25 +70,25 @@ func idsToString[T any](ids map[uint]T) string {
 }
 
 type openListEntry struct {
-	NFAstates   []*NFAState
+	nfaStates   []*NFAState
 	transitions map[rune]struct{}
 	state       *NFAState
 }
 
-func ConvertNFAtoPseudoDFA(initialNFAState *NFAState) (*NFAState, map[string]*NFAState) {
+func ConvertNFAtoPseudoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
 	var id uint = 0
-	DFAStates := make(map[string]*NFAState)
+	pseudoDFAStates := make(map[string]*NFAState)
 	openList := make([]openListEntry, 0)
 
-	initialNFAClass, initialNFAClassIds, transitions := epsilonClosureAndTransitions(initialNFAState)
+	initialNFASet, initialNFASetIds, initialNFASetTransitions := epsilonClosureAndTransitions(initialState)
 	
-	initialDFAState := newPseudoDFAState(&id, isAccepting(initialNFAClass...))
+	initialPseudoDFAState := NewNFAState(&id, isAccepting(initialNFASet...))
 
-	DFAStates[idsToString(initialNFAClassIds)] = initialDFAState
+	pseudoDFAStates[idsToString(initialNFASetIds)] = initialPseudoDFAState
 	openList = append(openList, openListEntry{
-		NFAstates:   initialNFAClass,
-		transitions: transitions,
-		state:       initialDFAState,
+		nfaStates:   initialNFASet,
+		transitions: initialNFASetTransitions,
+		state:       initialPseudoDFAState,
 	})
 
 	for len(openList) > 0 {
@@ -94,36 +101,36 @@ func ConvertNFAtoPseudoDFA(initialNFAState *NFAState) (*NFAState, map[string]*NF
 				continue
 			}
 
-			transitionNFAClass := make([]*NFAState, 0)
+			transitionNFASet := make([]*NFAState, 0)
 			// loop through all nodes in the current set and get all future nodes using the specific transition
-			for _, currentNFAState := range currentEntry.NFAstates {
-				transitionNFAClass = append(transitionNFAClass, currentNFAState.transitions[transition]...)
+			for _, currentNFAState := range currentEntry.nfaStates {
+				transitionNFASet = append(transitionNFASet, currentNFAState.transitions[transition]...)
 			}
 
-			transitionNFAClass, transitionNFAIds, transitions := epsilonClosureAndTransitions(transitionNFAClass...)
+			transitionNFASet, transitionNFASetIds, transitionNFASetTransitions := epsilonClosureAndTransitions(transitionNFASet...)
 
-			transitionNFAIdString := idsToString(transitionNFAIds)
-			transitionDFAState, ok := DFAStates[transitionNFAIdString]
+			transitionNFAIdString := idsToString(transitionNFASetIds)
+			transitionPseudoDFAState, ok := pseudoDFAStates[transitionNFAIdString]
 			// check if the transition leads to existing DFA
 			if !ok {
 				// if not make DFA state and add transition to open list
-				transitionDFAState = newPseudoDFAState(&id, isAccepting(transitionNFAClass...))
+				transitionPseudoDFAState = NewNFAState(&id, isAccepting(transitionNFASet...))
 
 				openList = append(openList, openListEntry{
-					NFAstates:   transitionNFAClass,
-					transitions: transitions,
-					state:       transitionDFAState,
+					nfaStates:   transitionNFASet,
+					transitions: transitionNFASetTransitions,
+					state:       transitionPseudoDFAState,
 				})
 
-				DFAStates[transitionNFAIdString] = transitionDFAState
+				pseudoDFAStates[transitionNFAIdString] = transitionPseudoDFAState
 			}
 
 			// connect transition DFA to current DFA
-			currentEntry.state.AddTransition(transition, transitionDFAState)
+			currentEntry.state.AddTransition(transition, transitionPseudoDFAState)
 		}
 	}
 
-	return initialDFAState, DFAStates
+	return initialPseudoDFAState, pseudoDFAStates
 }
 
 type DFAClass struct {
@@ -175,7 +182,7 @@ func makeDFAClasses(class *DFAClass, classes []*DFAClass) []*DFAClass {
 	return new_classes
 }
 
-func MinimizeDFA(initialStateId uint, states []*NFAState) *NFAState {
+func MinimizePseudoDFA(initialStateId uint, states map[string]*NFAState) (*NFAState, map[string]*NFAState) {
 	// Partition into accepting and non-accepting
 	nonaccepting := &DFAClass{
 		states:      make(map[uint]*NFAState),
@@ -187,7 +194,7 @@ func MinimizeDFA(initialStateId uint, states []*NFAState) *NFAState {
 	}
 
 	for _, state := range states {
-		if state.isAccepting {
+		if state.accepting {
 			accepting.states[state.id] = state
 		} else {
 			nonaccepting.states[state.id] = state
@@ -221,9 +228,8 @@ func MinimizeDFA(initialStateId uint, states []*NFAState) *NFAState {
 	for i, class := range classes {
 		state := &NFAState{
 			id:          uint(i),
-			isAccepting: class.isAccepting,
+			accepting: class.isAccepting,
 			transitions: make(map[rune][]*NFAState),
-			isPseudoDFA: true,
 		}
 		classToState[idsToString(class.states)] = state
 		if _, ok := class.states[initialStateId]; ok {
@@ -238,5 +244,5 @@ func MinimizeDFA(initialStateId uint, states []*NFAState) *NFAState {
 		}
 	}
 
-	return initialDFAState
+	return initialDFAState, classToState
 }
