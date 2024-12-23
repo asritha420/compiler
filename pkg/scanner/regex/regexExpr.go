@@ -15,10 +15,6 @@ const (
 type RExpr interface {
 }
 
-type String interface {
-	String() string
-}
-
 type ASTPrinter interface {
 	PrintNode(indent string) string
 }

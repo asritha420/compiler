@@ -128,3 +128,47 @@ func main() {
 
 Option 2: In File 
 
+//TODO: make sure all files have a consistent naming structure
+
+
+-------------
+Regex Grammar specification "frontend"
+
+Regex Grammar w/ literals in ""
+P -> E
+E -> TE'
+E' -> "|" TE' | epsilon
+T -> FT'
+T' -> FT' | epsilon
+F -> GF'
+F' -> "*"F' | epsilon
+G -> "("E")" | "v" //where v is any byte
+
+//TODO: can include this example in the documentation?
+```
+type Rule struct {
+    terminal string 
+    nonTerminal string 
+}
+
+type Grammar struct {
+    Rules: []*Rule
+}
+
+//raw string 
+g := &Grammar { 
+    Rules: []*Rule {
+        //P -> E 
+        {
+            terminal: `P`, 
+            nonTerminal: `"|"TE'` 
+        },
+        //E -> TE'
+        {
+            terminal: `E`, 
+            nonTerminal: 
+        }, 
+    }
+}
+
+```
