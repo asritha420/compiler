@@ -210,23 +210,23 @@ func (ks *KleeneStar) convertToNFA(idCounter uint) (*scanner.NFAState, *scanner.
 
 		leftNFAEndState.IsAccepting = false
 
-		startState := &scanner.NFAState{
-			FAState: scanner.FAState{
+		startState := &fsm.NFAState{
+			FAState: fsm.FAState{
 				Id:          idCounter + 1,
 				IsAccepting: false,
 			},
-			Transitions: map[rune][]*scanner.NFAState{
-				epsilon: []*scanner.NFAState{
+			Transitions: map[rune][]*fsm.NFAState{
+				epsilon: []*fsm.NFAState{
 					leftNFAStartState,
 				},
 			},
 		}
-		endState := &scanner.NFAState{
-			FAState: scanner.FAState{
+		endState := &fsm.NFAState{
+			FAState: fsm.FAState{
 				Id:          idCounter + 1,
 				IsAccepting: true,
 			},
-			Transitions: make(map[rune][]*scanner.NFAState),
+			Transitions: make(map[rune][]*fsm.NFAState),
 		}
 
 		//TODO: the below two prolly dont have to be separate, can blend together
