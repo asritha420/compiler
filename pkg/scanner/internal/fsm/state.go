@@ -5,25 +5,25 @@ const (
 )
 
 type NFAState struct {
-	id          uint
-	transitions map[rune][]*NFAState
-	accepting   bool
+	Id          uint
+	Transitions map[rune][]*NFAState
+	IsAccepting bool
 }
 
-func NewNFAState(id *uint, accepting bool) *NFAState {
+func NewNFAState(id *uint, isAccepting bool) *NFAState {
 	state := &NFAState{
-		id:          *id,
-		transitions: make(map[rune][]*NFAState),
-		accepting:   accepting,
+		Id:          *id,
+		Transitions: make(map[rune][]*NFAState),
+		IsAccepting: isAccepting,
 	}
 	*id++
 	return state
 }
 
 func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
-	if _, ok := state.transitions[transition]; !ok {
-		state.transitions[transition] = make([]*NFAState, 0)
+	if _, ok := state.Transitions[transition]; !ok {
+		state.Transitions[transition] = make([]*NFAState, 0)
 	}
 
-	state.transitions[transition] = append(state.transitions[transition], newStates...)
+	state.Transitions[transition] = append(state.Transitions[transition], newStates...)
 }

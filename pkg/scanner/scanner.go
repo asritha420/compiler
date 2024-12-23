@@ -11,8 +11,8 @@ type Scanner struct {
 
 func (s *Scanner) convertTokenRegexToFA() {
 	for _, tII := range s.tInitInfos {
-		parseTree := convertRegexToParseTree(tII.Regex)
-		parseTree.getNFA() //.removeEpsilonTransitions().convertToPseudoDFA().minimize()
+		_ = convertRegexToParseTree(tII.Regex)
+		// parseTree.getNFA() //.removeEpsilonTransitions().convertToPseudoDFA().minimize()
 	}
 }
 

@@ -6,22 +6,22 @@ import (
 )
 
 func makeMermaidIdString(state *NFAState) string {
-	id := fmt.Sprintf("id%d", state.id)
-	if state.accepting {
-		id += fmt.Sprintf("(((%d)))", state.id)
+	id := fmt.Sprintf("id%d", state.Id)
+	if state.IsAccepting {
+		id += fmt.Sprintf("(((%d)))", state.Id)
 	} else {
-		id += fmt.Sprintf("((%d))", state.id)
+		id += fmt.Sprintf("((%d))", state.Id)
 	}
 	return id
 }
 
 func makeMermaidRecursion(rootState *NFAState, edges []string, closed map[uint]struct{}) []string {
-	id := rootState.id
+	id := rootState.Id
 	if _, ok := closed[id]; ok {
 		return edges
 	}
 	closed[id] = struct{}{}
-	for transition, nextStates := range rootState.transitions {
+	for transition, nextStates := range rootState.Transitions {
 		if transition == Epsilon {
 			transition = 'ɛ'
 		}

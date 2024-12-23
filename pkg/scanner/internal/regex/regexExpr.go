@@ -1,11 +1,11 @@
 package regex
 
 import (
-	"asritha.dev/compiler/pkg/scanner/fsm"
+	"asritha.dev/compiler/pkg/scanner/internal/fsm"
+	_	"asritha.dev/compiler/pkg/scanner/internal/fsm"
 	"fmt"
 )
 
-// TODO: in all of them there is no arrow pointing to the start state -> probably unnecessary tho
 // separate out the types, printer, nfa converter into seperate files
 const (
 	epsilon rune = 0
@@ -26,7 +26,7 @@ type ASTPrinter interface {
 
 // TODO: write algorithm name in comment here, comment explaining what it does?
 type NFAConverter interface {
-	convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) //start, end, create aliases?
+	convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) //start, end, create aliases?
 }
 
 type NFAPrinter interface {
@@ -49,9 +49,9 @@ func (c *Const) PrintNode(indent string) string {
 	return fmt.Sprintf("%sConst { %c }", indent, c.value)
 }
 
-func (c *Const) convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) { 
-	startState := scanner.NewNFAState(idCounter, false)
-	endState := scanner.NewNFAState(idCounter, true)
+func (c *Const) convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) {
+	startState := fsm.NewNFAState(idCounter, false)
+	endState := fsm.NewNFAState(idCounter, true)
 	startState.AddTransition(c.value, endState)
 
 	return startState, endState, nil
@@ -90,7 +90,7 @@ func (a *Alternation) PrintNode(indent string) string {
 }
 
 // TODO add proper errors
-func (a *Alternation) convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner.NFAState, error) {
+func (a *Alternation) convertToNFA(idCounter *uint) (*fsm.NFAState, *fsm.NFAState, error) {
 	left, ok := a.left.(NFAConverter)
 	if(!ok){
 		return nil, nil, fmt.Errorf("left fail")
@@ -102,24 +102,24 @@ func (a *Alternation) convertToNFA(idCounter *uint) (*scanner.NFAState, *scanner
 	
 	leftNFAStartState, leftNFAEndState := left.convertToNFA(idCounter)
 	rightNFAStartState, rightNFAEndState := right.convertToNFA(idCounter)
-			startState := &scanner.NFAState{
-				FAState: scanner.FAState{
+			startState := &fsm.NFAState{
+				FAState: fsm.FAState{
 					Id:          idCounter + 1,
 					IsAccepting: false,
 				},
-				Transitions: map[rune][]*scanner.NFAState{
-					epsilon: []*scanner.NFAState{
+				Transitions: map[rune][]*fsm.NFAState{
+					epsilon: []*fsm.NFAState{
 						leftNFAStartState,
 						rightNFAStartState,
 					},
 				},
 			}
-			endState := &scanner.NFAState{
-				FAState: scanner.FAState{
+			endState := &fsm.NFAState{
+				FAState: fsm.FAState{
 					Id:          idCounter + 1,
 					IsAccepting: true,
 				},
-				Transitions: make(map[rune][]*scanner.NFAState),
+				Transitions: make(map[rune][]*fsm.NFAState),
 			}
 			rightNFAEndState.IsAccepting = false
 			leftNFAEndState.IsAccepting = false
