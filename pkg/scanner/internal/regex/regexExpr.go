@@ -1,4 +1,4 @@
-package scanner
+package regex
 
 import (
 	"asritha.dev/compiler/pkg/scanner/fsm"

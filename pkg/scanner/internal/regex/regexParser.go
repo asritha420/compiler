@@ -1,9 +1,8 @@
-package scanner
+package regex
 
 //TODO: a lot of this stuff shouldnt be public. same with the fa package. go through the entire scanner package and remove stuff that shouldnt be public
 
 import (
-	"asritha.dev/compiler/pkg/parsergen"
 	"fmt"
 )
 

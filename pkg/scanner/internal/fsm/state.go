@@ -1,4 +1,4 @@
-package scanner
+package fsm
 
 const (
 	Epsilon = 0x00

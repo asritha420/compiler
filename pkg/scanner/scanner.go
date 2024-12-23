@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	scanner "asritha.dev/compiler/pkg/scanner/regex" //fix this:https://stackoverflow.com/questions/45899203/can-i-develop-a-go-package-in-multiple-source-directories
+	"asritha.dev/compiler/pkg/scanner/internal/regex"
 	"fmt"
 )
 
@@ -17,7 +17,7 @@ func (s *Scanner) convertTokenRegexToFA() {
 }
 
 // TODO: move these helper methods somewhere else ?
-func convertRegexToParseTree(regex string) scanner.RExpr {
+func convertRegexToParseTree(regex string) regex.RExpr {
 	return nil
 }
 

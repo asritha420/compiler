@@ -2,8 +2,6 @@ package regex
 
 import (
 	"fmt"
-
-	"asritha.dev/compiler/pkg/fsm"
 )
 
 func convertRegexToNfaRecursion(regexASTRootNode RExpr, idToState map[uint]*fsm.FAState, id *uint) (*fsm.FAState, *fsm.FAState, error) {

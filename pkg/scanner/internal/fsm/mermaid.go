@@ -1,4 +1,4 @@
-package scanner
+package fsm
 
 import (
 	"fmt"
@@ -21,10 +21,10 @@ func makeMermaidRecursion(rootState *NFAState, edges []string, closed map[uint]s
 		return edges
 	}
 	closed[id] = struct{}{}
-	for transition, nextStates := range rootState.transitions{
+	for transition, nextStates := range rootState.transitions {
 		if transition == Epsilon {
 			transition = 'ɛ'
-		} 
+		}
 		for _, nextState := range nextStates {
 			edges = append(edges, fmt.Sprintf("%s -- %c --> %s", makeMermaidIdString(rootState), transition, makeMermaidIdString(nextState)))
 			edges = makeMermaidRecursion(nextState, edges, closed)
