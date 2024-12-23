@@ -7,21 +7,17 @@ const (
 type NFAState struct {
 	id          uint
 	transitions map[rune][]*NFAState
-	accepting bool
+	accepting   bool
 }
 
 func NewNFAState(id *uint, accepting bool) *NFAState {
 	state := &NFAState{
-		id: *id,
+		id:          *id,
 		transitions: make(map[rune][]*NFAState),
-		accepting: accepting,
+		accepting:   accepting,
 	}
 	*id++
 	return state
-}
-
-func (state *NFAState) GetId() uint {
-	return state.id
 }
 
 func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
@@ -30,12 +26,4 @@ func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
 	}
 
 	state.transitions[transition] = append(state.transitions[transition], newStates...)
-}
-
-func (state *NFAState) SetAccepting(accepting bool) {
-	state.accepting = accepting
-}
-
-func (state *NFAState) IsAccepting() bool {
-	return state.accepting
 }

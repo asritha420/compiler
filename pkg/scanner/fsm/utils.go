@@ -10,7 +10,7 @@ import (
 /*
 epsilonClosureAndTransitionsRecursion is the recursive method that will take an initial state and find the class containing all reachable states solely by epsilon. It will also get the ids and possible transitions of the class.
 */
-func epsilonClosureAndTransitionsRecursion(state *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) ([]*NFAState) {
+func epsilonClosureAndTransitionsRecursion(state *NFAState, states []*NFAState, closed map[uint]struct{}, transitions map[rune]struct{}) []*NFAState {
 	// check if we already found closure of state and add to closed list
 	if _, ok := closed[state.id]; ok {
 		return states
@@ -22,7 +22,7 @@ func epsilonClosureAndTransitionsRecursion(state *NFAState, states []*NFAState, 
 	for t := range maps.Keys(state.transitions) {
 		transitions[t] = struct{}{}
 	}
-	
+
 	// recurse into all states from epsilon transition
 	for _, s := range state.transitions[Epsilon] {
 		states = epsilonClosureAndTransitionsRecursion(s, states, closed, transitions)
@@ -75,13 +75,13 @@ type openListEntry struct {
 	state       *NFAState
 }
 
-func ConvertNFAtoPseudoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
+func convertNFAtoDFA(initialState *NFAState) (*NFAState, map[string]*NFAState) {
 	var id uint = 0
 	pseudoDFAStates := make(map[string]*NFAState)
 	openList := make([]openListEntry, 0)
 
 	initialNFASet, initialNFASetIds, initialNFASetTransitions := epsilonClosureAndTransitions(initialState)
-	
+
 	initialPseudoDFAState := NewNFAState(&id, isAccepting(initialNFASet...))
 
 	pseudoDFAStates[idsToString(initialNFASetIds)] = initialPseudoDFAState
