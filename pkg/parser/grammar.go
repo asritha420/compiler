@@ -1,18 +1,21 @@
 package parser
 
+import "slices"
+
 // TODO: go through and determine what should be public and what should not and also organize into its own files
 type Rule struct {
 	Terminal    string
 	NonTerminal string
 
 	nonTerminalRuneSlice []rune
-	nonTerminalTokens []RuleNonTerminalToken
+	nonTerminalTokens    []RuleNonTerminalToken
 }
 
 type RuleNonTerminalScanner struct {
 	start int //first character of grammar symbol being currently considered
 	curr  int //unconsumed char being currently considered
 	rule  *Rule
+	g     *Grammar
 }
 
 // Each Token represents a grammar symbol
@@ -23,8 +26,8 @@ type RuleNonTerminalToken struct {
 
 func NewRule(terminal string, nonTerminal string) *Rule {
 	r := &Rule{
-		Terminal:    terminal,
-		NonTerminal: nonTerminal,
+		Terminal:             terminal,
+		NonTerminal:          nonTerminal,
 		nonTerminalRuneSlice: []rune(nonTerminal),
 	}
 	return r
@@ -36,23 +39,37 @@ func (rs *RuleNonTerminalScanner) Scan() {
 	}
 }
 
-
-
 func (rs *RuleNonTerminalScanner) ScanRuleToken() {
-	c := rs.advance() 
+	c := rs.advance()
 
-	switch c { 
-	case '"': 
-	//belongs to a terminal -> keep going until it finds the next ", then verify that it matches something listed in []terminals
-	default: 
-	//is the start of a nonTerminal, keep going until it matches the longest possible string listed in the nonTemrinals 
-	 
+	switch c {
+	case '"':
+		//belongs to a terminal -> keep going until it finds the next ", then verify that it matches something listed in []terminals, else throw an error -> invalid terminal
+		while
+	default:
+		//is the start of a nonTerminal, keep going until it matches the longest possible string listed in the nonTerminals; if it reaches EOF without matching w/ a valid nonTerminal, throw an error
+
 	}
+}
+
+// consumeCurrRune() consumes and returns the current character
+func (rs *RuleNonTerminalScanner) consumeCurrRune() rune {
+	rs.curr++
+	return rs.rule.nonTerminalRuneSlice[rs.curr-1]
+}
+
+// TODO: add comments for all these
+func (rs *RuleNonTerminalScanner) isValidTerminal(gs string) bool {
+	return slices.Contains(rs.g.Terminals, gs)
+}
+
+func (rs *RuleNonTerminalScanner) isValidNonTerminal(gs string) bool {
+	return slices.Contains(rs.g.NonTerminals, gs)
 }
 
 func (rs *RuleNonTerminalScanner) advance() rune {
 	rs.curr++
-	r := rs.rule.nonTerminalRuneSlice[rs.curr - 1]
+	r := rs.rule.nonTerminalRuneSlice[rs.curr-1]
 	return r
 }
 
@@ -105,10 +122,10 @@ func NewGrammar(rules []*Rule, nonTerminals []string, terminals []string) *Gramm
 
 func (g *Grammar) generateFirstSets() {
 
-	for i := len(g.Rules) - 1; i >= 0; i-- {
-		r := g.Rules[i]
-
-	}
+	//for i := len(g.Rules) - 1; i >= 0; i-- {
+	//	r := g.Rules[i]
+	//
+	//}
 }
 
 func (g *Grammar) generateFollowSets() {
