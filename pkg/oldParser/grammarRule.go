@@ -8,6 +8,9 @@ import (
 
 type RuleTokenType int
 
+type RuneRange struct {
+}
+
 const (
 	TERMINAL RuleTokenType = iota
 	NON_TERMINAL
