@@ -1,53 +1,31 @@
-package parsergen
-
-import (
-	"fmt"
-)
+package grammar
 
 /*
-  P -> E
-  E -> TE'
-  E' -> "|"TE' | ""
-  T -> FT'
-  T' -> FT' | "\\\""
-  F -> GF'
-  F' -> "*"F' | ""
-  G -> "("E")" | "v" // where v is any byte
+Given grammar symbol X
+
+# FIRST(X) is the set of all terminal symbols that can appear at the beginning of any string derived from X
+
+For a terminal X:
+
+	FIRST(X) = {X}
+
+For a production rule X -> Y_1Y_2...Y_n
+
+	For Y_i in Y_1Y_2...Y_n
+		Add all terminal symbols in FIRST(Y_i) to FIRST(X) except epsilon
+		If epsilon is in FIRST(Y_i), continue to Y_i+1
+	If all Y_1, Y_2, ... Y_n can derive epsilon, add epsilon to FIRST(X)
 */
+func (g *Grammar) generateFirstSets() {
 
-type Grammar struct {
-	Rules        []*Rule
-	nonTerminals [][]rune
-	terminals    []rune
+	//for i := len(g.Rules) - 1; i >= 0; i-- {
+	//	r := g.Rules[i]
+	//
+	//}
 }
 
-func NewGrammar(rulesStr string) (*Grammar, error) {
-	rules, nonTerminals, err := NewRules(rulesStr)
-	if err != nil {
-		return nil, fmt.Errorf("[NewGrammar] failed to generate rules because:\n%w", err)
-	}
-
-	g := &Grammar{
-		Rules:        rules,
-		nonTerminals: nonTerminals,
-		terminals:    make([]rune, 0),
-	}
-	
-	g.fillTerminals()
-
-	return g, nil
-}
-
-func (g *Grammar) fillTerminals() {
-	for _, rule := range g.Rules {
-		for _, production := range rule.productions {
-			for _, token := range production {
-				if token.tokenType == TERMINAL {
-					g.terminals = append(g.terminals, token.value...)
-				}
-			}
-		}
-	}
+func (g *Grammar) generateFollowSets() {
+	//TODO
 }
 
 //
