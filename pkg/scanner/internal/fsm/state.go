@@ -21,23 +21,23 @@ type Edge struct {
 	end        *NFAState
 }
 
-func (s *NFAState) getEdgesRecursion(edges []*Edge, closed map[uint]struct{}) []*Edge {
-	id := s.id
+func (state *NFAState) getEdgesRecursion(edges []*Edge, closed map[uint]struct{}) []*Edge {
+	id := state.id
 	if _, ok := closed[id]; ok {
 		return edges
 	}
 	closed[id] = struct{}{}
-	for transition, nextStates := range s.transitions {
+	for transition, nextStates := range state.transitions {
 		for _, nextState := range nextStates {
-			edges = append(edges, &Edge{start: s, transition: transition, end: nextState})
+			edges = append(edges, &Edge{start: state, transition: transition, end: nextState})
 			edges = nextState.getEdgesRecursion(edges, closed)
 		}
 	}
 	return edges
 }
 
-func (s *NFAState) getEdges() []*Edge {
-	return s.getEdgesRecursion(make([]*Edge, 0), make(map[uint]struct{}))
+func (state *NFAState) getEdges() []*Edge {
+	return state.getEdgesRecursion(make([]*Edge, 0), make(map[uint]struct{}))
 }
 
 func makeMermaidIdString(state *NFAState) string {
@@ -54,12 +54,12 @@ func (e *Edge) String() string {
 	return fmt.Sprintf("%s -- %c --> %s", makeMermaidIdString(e.start), e.transition, makeMermaidIdString(e.end))
 }
 
-func (s *NFAState) String() string {
+func (state *NFAState) String() string {
 	output := make([]string, 0)
-	for _, edge := range s.getEdges() {
+	for _, edge := range state.getEdges() {
 		output = append(output, edge.String())
 	}
-	output = append(output, fmt.Sprintf("START:::hidden -- start --> %s", makeMermaidIdString(s)))
+	output = append(output, fmt.Sprintf("START:::hidden -- start --> %s", makeMermaidIdString(state)))
 	return strings.Join(output, "\n")
 }
 
@@ -81,16 +81,16 @@ func (state *NFAState) AddTransition(transition rune, newStates ...*NFAState) {
 	state.transitions[transition] = append(state.transitions[transition], newStates...)
 }
 
-func (s *NFAState) isStateEqual(other *NFAState, idMap map[uint]uint) bool {
-	if otherId, ok := idMap[s.id]; ok {
+func (state *NFAState) isStateEqual(other *NFAState, idMap map[uint]uint) bool {
+	if otherId, ok := idMap[state.id]; ok {
 		if other.id != otherId {
 			return false
 		}
 	} else {
-		if s.IsAccepting != other.IsAccepting {
+		if state.IsAccepting != other.IsAccepting {
 			return false
 		}
-		idMap[s.id] = other.id
+		idMap[state.id] = other.id
 	}
 	return true
 }
@@ -99,14 +99,14 @@ func (s *NFAState) isStateEqual(other *NFAState, idMap map[uint]uint) bool {
 /*
 Check if 2 NFAs are the same. This does NOT check id but rather if the 2 states will produce the same graph.
 */
-func (s *NFAState) IsEqual(other *NFAState) bool {
+func (state *NFAState) IsEqual(other *NFAState) bool {
 	// first check if they are the same
-	if s == other {
+	if state == other {
 		return true
 	}
 
 	// get all edges
-	edges := s.getEdges()
+	edges := state.getEdges()
 	otherEdges := other.getEdges()
 
 	// check for same number of edges
