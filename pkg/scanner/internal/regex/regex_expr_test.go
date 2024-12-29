@@ -2,8 +2,7 @@ package regex
 
 import (
 	"testing"
-
-	"asritha.dev/compiler/pkg/scanner/internal/fsm"
+	// "asritha.dev/compiler/pkg/scanner/internal/fsm"
 )
 
 func TestSimple(t *testing.T) {
@@ -22,8 +21,8 @@ func TestSimple(t *testing.T) {
 	}
 
 	//equivalent NFA
-	start2, end2, _ := caAltbKleen.convertToNFA(&id)
-	end2.AddTransition(fsm.Epsilon, fsm.NewNFAState(&id, true))
+	start2, _, _ := caAltbKleen.convertToNFA(&id)
+	// end2.AddTransition(fsm.Epsilon, fsm.NewNFAState(&id, true))
 
 	t.Log(start.IsEqual(start2))
 }
