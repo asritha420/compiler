@@ -9,8 +9,7 @@ type Token struct {
 }
 
 type TokenInitInfo struct {
-	TType TokenType
-	Name  string
-	Regex string
+	TType       TokenType
+	Name, Regex string
 	//fa *State
 }

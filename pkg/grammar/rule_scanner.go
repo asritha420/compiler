@@ -8,10 +8,9 @@ import (
 type production = []*symbol
 
 type RuleScanner struct {
-	curr              int
-	rule              []rune
-	validNonTerminals []string
-	validTerminals    []string
+	curr                              int
+	rule                              []rune
+	validNonTerminals, validTerminals []string
 }
 
 func (rs *RuleScanner) Scan() ([]production, error) {
