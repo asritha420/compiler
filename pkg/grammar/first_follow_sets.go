@@ -31,7 +31,6 @@ func (g *Grammar) generateFirstSets(s symbol) error {
 						rule.FirstSet = append(rule.FirstSet, []rune(validLiteral)[0])
 					}
 				case nonTerminal:
-					firstSet :=
 				/*
 					get firstSet for the nonTerminal recursively
 					if that firstSet contains epsilon, proceed to next iteration
@@ -45,10 +44,11 @@ func (g *Grammar) generateFirstSets(s symbol) error {
 			}
 		}
 	}
+	return nil
 }
 
 func (g *Grammar) generateFirstSetsHelper(s symbol) ([]rune, error) {
-
+	return nil, nil
 }
 
 func (g *Grammar) generateFollowSets() {

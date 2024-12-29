@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// tests with regex grammar
 func TestNewGrammar(t *testing.T) {
 	rules := []string{
 		`production = expression`,
