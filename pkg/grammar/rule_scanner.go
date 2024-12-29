@@ -23,8 +23,7 @@ func (rs *RuleScanner) Scan() ([]production, error) {
 }
 
 func (rs *RuleScanner) scanProduction(productions []production) ([]production, error) {
-	production := make(production, 0)
-	productions = append(productions, production)
+	currProduction := make(production, 0)
 
 	for rs.curr < len(rs.rule) {
 		switch rs.rule[rs.curr] {
@@ -32,6 +31,7 @@ func (rs *RuleScanner) scanProduction(productions []production) ([]production, e
 			rs.curr++
 		case '|':
 			rs.curr++
+			productions = append(productions, currProduction)
 			return rs.scanProduction(productions)
 		case '"':
 			rs.curr++
@@ -39,30 +39,36 @@ func (rs *RuleScanner) scanProduction(productions []production) ([]production, e
 			if err != nil {
 				return nil, err
 			}
-			production = append(production, newTerminalSymbol(terminal))
+			currProduction = append(currProduction, newTerminalSymbol(terminal))
 		case '[':
 			rangeType, err := rs.consumeTerminalRange()
 			if err != nil {
 				return nil, err
 			}
 			rs.curr += 5 // consume the range
-			production = append(production, newTerminalRangeSymbol(rangeType))
+			currProduction = append(currProduction, newTerminalRangeSymbol(rangeType))
 		default:
 			nonTerminal, err := rs.consumeNonTerminal()
 			if err != nil {
 				return nil, err
 			}
-			production = append(production, newNonTerminalSymbol(nonTerminal))
+			currProduction = append(currProduction, newNonTerminalSymbol(nonTerminal))
 		}
 	}
 
+	productions = append(productions, currProduction)
 	return productions, nil
 }
 
 func (rs *RuleScanner) consumeNonTerminal() (string, error) {
 	closingSpaceIndex := rs.consumeSymbolUntil(' ')
 
-	nT := string(rs.rule[rs.curr:closingSpaceIndex])
+	var nT string
+	if closingSpaceIndex == rs.curr { // the nonTerminal is the last symbol in the rule
+		nT = string(rs.rule[rs.curr:len(rs.rule)])
+	} else {
+		nT = string(rs.rule[rs.curr:closingSpaceIndex])
+	}
 
 	if !rs.isValidNonTerminal(nT) {
 		return "", fmt.Errorf("rs.consumeNonTerminal(): '%s' is an invalid nonTerminal", nT)
@@ -81,7 +87,7 @@ func (rs *RuleScanner) consumeTerminal() (string, error) {
 		return "", fmt.Errorf("rs.consumeTerminal(): there is no closing quote for the terminal '%s'", t)
 	}
 
-	if !rs.isValidTerminal(t) {
+	if !rs.isValidTerminal(t) && t != " " { //TODO: have a better way for handling epsilons?
 		return "", fmt.Errorf("rs.consumeTerminal(): '%s' is an invalid terminal", t)
 	}
 
@@ -89,6 +95,7 @@ func (rs *RuleScanner) consumeTerminal() (string, error) {
 	return t, nil
 }
 
+// TODO: change to use a built in slices func to get first index of the end rune instead??
 func (rs *RuleScanner) consumeSymbolUntil(end rune) int {
 	endIndex := rs.curr
 

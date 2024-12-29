@@ -11,6 +11,10 @@ const (
 	epsilon
 )
 
+func (s symbolType) String() string {
+	return [...]string{"nonTerminal", "terminal", "terminalLowercaseRange", "terminalUppercaseRange", "terminalNumberRange", "epsilon"}[s]
+}
+
 type symbol struct {
 	symbolType    symbolType
 	validLiterals []string
@@ -26,7 +30,7 @@ func newNonTerminalSymbol(literal string) *symbol {
 func newTerminalSymbol(literal string) *symbol {
 	symbolType := terminal
 
-	if literal == "" {
+	if literal == " " {
 		symbolType = epsilon
 	}
 

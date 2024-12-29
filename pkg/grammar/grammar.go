@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+// TODO: users should not have to specify terminals and nonTerminals?
+// TODO: test NewGrammar()
+// TODO: if its the symbol, store a a pointer to the same symbol in the Rule
+
 type Grammar struct {
 	Rules []*Rule
 }
@@ -40,8 +44,8 @@ func NewGrammar(rules []string, nonTerminals []string, terminals []string) (*Gra
 		})
 	}
 
-	g.generateFirstSets()
-	g.generateFollowSets()
+	//g.generateFirstSets()
+	//g.generateFollowSets()
 
 	return g, nil
 }
