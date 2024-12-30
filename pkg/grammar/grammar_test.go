@@ -6,9 +6,8 @@ import (
 	"testing"
 )
 
-// tests with regex grammar
-func TestNewGrammar(t *testing.T) {
-	rules := []string{
+var (
+	rules = []string{
 		`production = expression`,
 		`expression = term expressionPrime`,
 		`expressionPrime = "|" term expressionPrime | " "`, //TODO: write in the spec how EPSILON should be specified as " "
@@ -19,9 +18,12 @@ func TestNewGrammar(t *testing.T) {
 		`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`,
 	}
 
-	nonTerminals := []string{"production", "expression", "term", "expressionPrime", "term", "termPrime", "factor", "group", "factorPrime"}
-	terminals := []string{"|", "*", "(", ")"} // TODO: write in comments or spec how the ranges don't have to be specified in the terminals array -> bc its confusing for the user, honestly might make more sense to just calculate it ourselves
+	nonTerminals = []string{"production", "expression", "term", "expressionPrime", "term", "termPrime", "factor", "group", "factorPrime"}
+	terminals    = []string{"|", "*", "(", ")"} // TODO: write in comments or spec how the ranges don't have to be specified in the terminals array -> bc its confusing for the user, honestly might make more sense to just calculate it ourselves
+)
 
+// tests with regex grammar
+func TestNewGrammar(t *testing.T) {
 	result, err := NewGrammar(rules, nonTerminals, terminals)
 
 	if err != nil {
@@ -167,5 +169,48 @@ func (g *Grammar) String() string {
 	return rules
 }
 
-func TestGenerateFirstSet(t *testing.T)  {}
+func TestGenerateFirstSet(t *testing.T) {
+	g, err := NewGrammar(rules, nonTerminals, terminals)
+	//TODO: repeating from above
+	if err != nil {
+		t.Errorf("TODO")
+	}
+
+	_ = [][]rune{
+		{'(', 'v'}, // production
+		{'(', 'v'}, // expression
+		{},         // expressionPrime
+		{'(', 'v'}, // term
+		{},         // termPrime
+		{'(', 'v'}, // factor
+		{},         // factorPrime
+		{'(', 'v'}, // group
+	}
+
+	g.generateFirstSets()
+
+	/*
+		rules = []string{
+			`production = expression`,
+			`expression = term expressionPrime`,
+			`expressionPrime = "|" term expressionPrime | " "`, //TODO: write in the spec how EPSILON should be specified as " "
+			`term = factor termPrime`,
+			`termPrime = factor termPrime | " "`,
+			`factor = group factorPrime`,
+			`factorPrime = "*" factorPrime | " "`,
+			`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`,
+		}
+
+			- start at first rule
+			- for each production within reach rule
+			- loop through symbols in first rule
+				- if it hits a nonTerminal, call the recursive getFirstSetForNonTerminal
+					- set the returned results = to the first set of the rule's NT,
+					- if it is not the last symbol in the production:
+						- keep looping through rest of symbols. if it's a nonTerminal, call recursively. keep looping until it finds one w/ a first set that does not contain epsilon.
+							- then add the first set of that to the og nonTerminal first set
+					- if all of them have epsilon then add epsilon to the og first set
+	*/
+
+}
 func TestGenerateFollowSet(t *testing.T) {}

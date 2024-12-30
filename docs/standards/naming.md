@@ -10,4 +10,7 @@
   - unless for a private field, make acronyms all capital
 
 ### Interfaces: 
-- one method interfaces should have `-er` suffix  
+- one method interfaces should have `-er` suffix 
+
+### Tests: 
+- test functions name should be: `Test<NameOfFunctionThatItIsTesting>`
