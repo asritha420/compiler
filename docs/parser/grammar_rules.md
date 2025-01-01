@@ -12,7 +12,7 @@ We support a modified version of EBNF with the following conventions.
 * terminals: written in double quotes (`"..."`)
 
 <u> Production conventions: </u>
-* the first production is used as the start production
+* the last production is used as the start production?
 
 | Function | Notation |
 |----------|----------|
@@ -79,33 +79,33 @@ grammar := [][]rune{
 ### Production Rules
 #### Grammar (Using Go String formatting)
 ```
-RangeChar = ([] - [&-&&]) | "&&-" | "&&&&";
-IdentifierChar = [a-z] | [A-Z] | [0-9] | "_";
-StringChar = ([] - ["&&]) | "&&&"" | "&&&&";
-SpaceChar = [\t\n\v\f\rU+0085U+00A0];
+rangeChar = ([] - [&-&&]) | "&&-" | "&&&&";
+identifierChar = [a-z] | [A-Z] | [0-9] | "_";
+stringChar = ([] - ["&&]) | "&&&"" | "&&&&";
+spaceChar = [\t\n\v\f\rU+0085U+00A0];
 
-Terminal = "&"" StringChar* "&"";
-Identifier = IdentifierChar+;
-Range = "[" (RangeChar "-" RangeChar) | RangeChar* "]";
+terminal = "&"" stringChar* "&"";
+identifier = identifierChar+;
+range = "[" (rangeChar "-" rangeChar) | rangeChar* "]";
 
-Space = SpaceChar*;
+space = spaceChar*;
 
-Term = "(" RHS ")"
-     | Terminal
-     | Identifier
-     | Range;
+term = "(" RHS ")"
+     | terminal
+     | identifier
+     | range;
 
-Factor = Term Space ([?*+] | ("-" Space Term))?;
+factor = term (space ([?*+] | ("-" space term)))?;
 
-Concatenation = Factor+;
-Alternation = Concatenation ("|" Concatenation)+;
+concatenation = factor (space factor)*;
+alternation = concatenation (space "|" space concatenation)*;
 
-RHS = Space Alternation Space;
-LHS = Space Identifier Space;
+RHS = space alternation space;
+LHS = space identifier space;
 
-Rule = LHS "=" RHS ";"
+rule = LHS "=" RHS ";"
 
-Grammar = Rule*
+grammar = rule*
 ```
 
 #### Ranges
