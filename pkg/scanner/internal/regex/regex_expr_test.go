@@ -1,11 +1,13 @@
 package regex
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	// "asritha.dev/compiler/pkg/scanner/internal/fsm"
 )
 
-func TestSimple(t *testing.T) {
+func TestEqualSimple(t *testing.T) {
 	a := NewConst('a')
 	b := NewConst('b')
 	c := NewConst('c')
@@ -13,6 +15,8 @@ func TestSimple(t *testing.T) {
 	aAltb := NewAlternation(a, b)
 	aAltbKleen := NewKleeneStar(aAltb)
 	caAltbKleen := NewConcatenation(c, aAltbKleen)
+	s := "&v"
+	fmt.Printf(s, s)
 
 	var id uint = 0
 	start, _, err := caAltbKleen.convertToNFA(&id)
