@@ -448,7 +448,7 @@ func main() {
 	stringChar := newNonTerm("stringChar", newAlt(tmp, newTerm("&\""), newTerm("&&")))
 
 	//spaceChar = [\t\n\v\f\rU+0085U+00A0];
-	spaceChar := newCharRange("\t\n\v\f\rU+0085U+00A0")
+	spaceChar := newCharRange("\t\n\v\f\rU+0085U+00A0 ")
 
 	// terminal = "&"" stringChar* "&"";
 	terminal := newNonTerm("terminal", newConcat(newTerm("\""), newNoneOrMore(stringChar), newTerm("\"")))
@@ -498,7 +498,8 @@ func main() {
 	//grammar = rule*;
 	grammar := newNonTerm("grammar", newNoneOrMore(rule))
 
-	root := grammar.match([]rune("h=he|(llo[y-t]);"))
+	root := grammar.match([]rune("h = he|(llo[y-t]);"))
+	root = findNonTerms(root)[0]
 	print(root)
 } 
 
