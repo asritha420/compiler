@@ -158,7 +158,7 @@ func (g *Grammar) String() string {
 	for _, r := range g.Rules {
 		var productions string
 		for _, p := range r.productions {
-			var symbols string //TODO: should print symbolType literal instead of just numbe r
+			var symbols string //TODO: should print symbolType literal instead of just number
 			for _, s := range p {
 				symbols = symbols + fmt.Sprintf("\n \t %+v", *s)
 			} //TODO: should group each productions group together instead of just a new line separation
@@ -202,7 +202,7 @@ func TestGenerateFirstSet(t *testing.T) {
 		}
 
 			- start at first rule
-			- for each production within reach rule
+			- for each production within each rule
 			- loop through symbols in first rule
 				- if it hits a nonTerminal, call the recursive getFirstSetForNonTerminal
 					- set the returned results = to the first set of the rule's NT,

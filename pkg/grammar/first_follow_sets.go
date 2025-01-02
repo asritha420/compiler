@@ -22,10 +22,9 @@ For a non terminal X with production rule X -> Y_1Y_2...Y_n
 	If all Y_1, Y_2, ... Y_n can derive epsilon, add epsilon to FIRST(X)
 */
 
-// TODO: currently doesnt do EXCEPT epsilon on line 20
 var (
-	firstSets map[string][]rune //the string can be any nonTerminal or terminal, not for ranges?
-	rulesMap  map[string][]production
+	firstSets map[string][]rune       // the string can be any nonTerminal or terminal, not for ranges? -> should be symbol instead
+	rulesMap  map[string][]production // need to generate this?
 )
 
 func (g *Grammar) generateFirstSets() error {
@@ -35,21 +34,7 @@ func (g *Grammar) generateFirstSets() error {
 
 	for _, rule := range g.Rules {
 		for _, p := range rule.productions { //should treat each individual rule prod as a rule?
-			for _, s := range p {
-				switch s.symbolType {
-				case terminal:
-					terminalValue := s.validLiterals[0]
-					firstLetter := []rune(terminalValue)[0] //TODO: this is messy lol
-					firstSets[terminalValue] = []rune{firstLetter}
-				case terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange:
-					var test []rune
-					for _, validLiteral := range s.validLiterals {
-						test = append(test, []rune(validLiteral)[0])
-					}
-				case nonTerminal:
-					g.generateFirstSetFor(s.validLiterals[0]) // not doing anything with the returned
-				}
-			}
+			_, _ = g.generateFirstSetFOR(&p)
 		}
 	}
 
@@ -61,15 +46,63 @@ func (g *Grammar) generateFirstSets() error {
 	return nil
 }
 
+func (g *Grammar) generateFirstSetFOR(p *production) ([]rune, error) {
+	var OGNTFirstset []rune
+	for i, s := range *p {
+		switch s.symbolType {
+		case terminal:
+			terminalValue := s.validLiterals[0]
+			firstLetter := []rune(terminalValue)[0]
+			firstSets[terminalValue] = []rune{firstLetter}
+		case terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange:
+			var test []rune
+			for _, validLiteral := range s.validLiterals {
+				test = append(test, []rune(validLiteral)[0])
+			}
+		case nonTerminal:
+			productions := rulesMap[s.validLiterals[0]]
+
+			var nonTerminalFirstSet []rune // each first set for a rule/non-terminal will contain first sets from BOTH productions
+			for _, p := range productions {
+				firstSet, err := g.generateFirstSetFOR(&p)
+				if err != nil {
+					return nil, err
+				}
+				nonTerminalFirstSet = append(nonTerminalFirstSet, firstSet...)
+			}
+
+			containsEpsilon := false
+			// TODO: def a better way to do this
+			for _, lol := range nonTerminalFirstSet {
+				if lol == ' ' { // append everything but the epsilon to the OGNTFIrstSet
+					containsEpsilon = true // so go to the next one
+				} else {
+					OGNTFirstset = append(OGNTFirstset, lol)
+				}
+			}
+
+			if !containsEpsilon {
+				break
+			}
+
+			if i == len(*p)-1 && containsEpsilon {
+				OGNTFirstset = append(OGNTFirstset, ' ')
+			}
+			// TODO: set it in the map so dont have to recalculate recursively? (ie. memoization) for the NTs
+		}
+	}
+	return OGNTFirstset, nil
+}
+
 // recursively call itself? TODO: remainingSymbols should be pointer
-func (g *Grammar) generateFirstSetFor(nT string) ([]rune, error) {
+func (g *Grammar) generateFirstSetFor(nT string) ([]rune, error) { // should be symbol instead of nT
 	for _, p := range rulesMap[nT] {
 		allEpsilon := true
 		for _, s := range p {
 			switch s.symbolType {
 			case terminal:
 				terminalValue := s.validLiterals[0]
-				firstLetter := []rune(terminalValue)[0] //TODO: this is messy lol
+				firstLetter := []rune(terminalValue)[0]
 				firstSets[terminalValue] = []rune{firstLetter}
 				return firstSets[terminalValue], nil
 			case terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange:
@@ -117,7 +150,7 @@ func (g *Grammar) generateFirstSetFor(nT string) ([]rune, error) {
 	return firstSets[nT], nil
 }
 
-// TODO: rename the symbol and production type to gSymbol, gProduction? so I odnt hve to use letters in all for loops? or make sure all for loops have letters for consistency
+// TODO: rename the symbol and production type to gSymbol, gProduction? so I don't hve to use letters in all for loops? or make sure all for loops have letters for consistency -> actually just use letters, just make sure that the same letters everywhere exist
 
 func (g *Grammar) generateFollowSets() {
 	//TODO

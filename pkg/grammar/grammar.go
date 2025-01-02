@@ -6,7 +6,6 @@ import (
 )
 
 // TODO: users should not have to specify terminals and nonTerminals?
-// TODO: test NewGrammar()
 // TODO: if its the symbol, store a a pointer to the same symbol in the Rule
 
 type Grammar struct {
