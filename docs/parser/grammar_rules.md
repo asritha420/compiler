@@ -84,7 +84,9 @@ spaceChar = [\t\n\v\f\rU+0085U+00A0];
 
 terminal = "&"" stringChar* "&"";
 identifier = identifierChar+;
-range = "[" (rangeChar "-" rangeChar) | rangeChar* "]";
+toRange = (rangeChar "-" rangeChar);
+charRange = rangeChar*;
+range = "[" toRange | charRange "]";
 
 space = spaceChar*;
 
@@ -101,9 +103,9 @@ alternation = concatenation (space "|" space concatenation)*;
 RHS = space alternation space;
 LHS = space identifier space;
 
-rule = LHS "=" RHS ";"
+rule = LHS "=" RHS ";";
 
-grammar = rule*
+grammar = rule*;
 ```
 
 #### Ranges

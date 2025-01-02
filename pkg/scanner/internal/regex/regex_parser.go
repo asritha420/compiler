@@ -5,6 +5,41 @@ import (
 	"fmt"
 )
 
+
+/* 
+
+	rules = []string{
+		`production = expression`,
+		`expression = term expressionPrime`,
+		`expressionPrime = "|" term expressionPrime | " "`, //TODO: write in the spec how EPSILON should be specified as " "
+		`term = factor termPrime`,
+		`termPrime = factor termPrime | " "`,
+		`factor = group factorPrime`,
+		`factorPrime = "*" factorPrime | " "`,
+		`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`,
+	}
+
+// parse tree for the regex grammar 
+		 
+	"abc"
+
+	expr 
+	concat var string random 
+	a b c
+	
+
+	var string random 
+	
+
+	for each production: 
+	symbolTokens = []symbol { 
+		expression nt token, 
+	}
+
+	bababa
+
+	*/ 
+
 // RegexParser will consume a regex string and return an AST
 type RegexParser struct {
 	grammar *grammar.Grammar
