@@ -244,10 +244,8 @@ func MinimizeDFA(initialStateId uint, states map[string]*NFAState) (*NFAState, m
 	return initialDFAState, classToState
 }
 
-
-
-//TODO move to separate utility file
+// TODO move to separate utility file
 func Remove[T any](s []T, i int) []T {
-    s[i] = s[len(s)-1]
-    return s[:len(s)-1]
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
