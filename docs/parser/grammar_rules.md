@@ -12,16 +12,27 @@ We support a modified version of EBNF with the following conventions.
 * terminals: written in double quotes (`"..."`)
 
 <u> Production conventions: </u>
+* the last production is used as the start production?
 
-* sequence(`x y`): two elements after another with a space in between  
-* alternation (`|`)
-* ranges (`'[...]'`): 
-  * we only support the three built in ranges: 
-    * lowercase: (`[a-z]`)
-    * uppercase: (`[A-Z]`)
-    * numbers: (`[0-9]`)
+| Function | Notation |
+|----------|----------|
+| definition | = |
+| concatenation | space |
+| termination | ; |
+| alternation | \| |
+| exception | - |
+| none or one | ? |
+| none or more | * |
+| one or more | + |
+| grouping | (...) |
+| terminal | "..." |
+| range | [...] |
+| escape | & |
 
-Support for all conventions with EBNF will be incremently added. 
+Note: Any number of space characters (`\t, \n, \v, \f, \r, ' ', 0x85, 0xA0`) will be accepted for concatenation or between any functions but there should either be at most 1 space.
+
+Support for all conventions with EBNF will be inclemently added. 
+
 
 ### Defining grammar 
 
@@ -52,39 +63,51 @@ The examples below show how to define a regex grammar in the two supported forma
 grammar := [][]rune{ 
     []rune(`production = expression`), 
     []rune(`expression = term expressionPrime`),
-    []rune(`expressionPrime = "|" term expressionPrime | EPSILON`),
+    []rune(`expressionPrime = "|" term expressionPrime | ""`),
     []rune(`term = factor termPrime`),
-    []rune(`termPrime = factor termPrime | EPSILON`), 
+    []rune(`termPrime = factor termPrime | ""`), 
     []rune(`factor = group factorPrime`), 
-    []rune(`factorPrime = "*" factorPrime | EPSILON`), 
+    []rune(`factorPrime = "*" factorPrime | ""`), 
     []rune(`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`) 
 }
 ```
 
 
-
-
 ---
 ### Production Rules
-#### Grammar
+#### Grammar (Using Go String formatting)
 ```
-P -> Rule("\n"Rule)*
-Rule -> WS* NT WS* "->" WS*Prod("|"Prod)*WS*
-Prod -> Token*
-Token -> WS*(NonTerm | Term | Range)WS*
-NonTerm -> [^ \n\t\"[]]*
-Term -> "\""[^]*"\""
+rangeChar = ([] - [&-&&]) | "&&-" | "&&&&";
+identifierChar = [a-z] | [A-Z] | [0-9] | "_";
+stringChar = ([] - ["&&]) | "&&&"" | "&&&&";
+spaceChar = [\t\n\v\f\rU+0085U+00A0];
 
-Range -> "[" ("{"TRange"}"ICTRange | ICTRange) "]"
-ICTRange -> CTRange | "^"CTRange
-CTRange -> CRange | TRange
-CRange -> V*
-TRange -> V"-"V
+terminal = "&"" stringChar* "&"";
+identifier = identifierChar+;
+range = "[" (rangeChar "-" rangeChar) | rangeChar* "]";
+
+space = spaceChar*;
+
+term = "(" RHS ")"
+     | terminal
+     | identifier
+     | range;
+
+factor = term (space ([?*+] | ("-" space term)))?;
+
+concatenation = factor (space factor)*;
+alternation = concatenation (space "|" space concatenation)*;
+
+RHS = space alternation space;
+LHS = space identifier space;
+
+rule = LHS "=" RHS ";"
+
+grammar = rule*
 ```
-Note: V is all characters and WS is all white space characters.
 
 #### Ranges
-Note: In order to use `^`, `-`, `{`, or `}` in a range, please escape it.
+Note: In order to use `-` or `&` in a range, please escape it.
 
 In order to easily use a range of characters in a production, you can use square brackets with a range inside like so:
 
@@ -92,27 +115,6 @@ In order to easily use a range of characters in a production, you can use square
 
 This however gets clunky if you have only a lot of disjoint characters that you would like to group. For that, you can simply put a string within `[]` which will match as long as any of the characters in the string matched (similar to many alternations). Here is an example that would match "hello world":
 
-`[helowrd]`
+`[helowrd ]`
 
-You can also specify to take the opposite of a range or group of characters by adding a `^` to the front. For example:
-
-`[^A-Z] or [^helowrd]`
-
-By default, taking the opposite will use the range $0-2^{31}$ as the language but this is often not desirable (for example with ascii encoding) and can be changed by using `{}` at the front with another range within. For example the following will match any lower case character other than g:
-
-`[{a-z}^g]`
-
-Note: While specifying a range for the language is possible for non inverting (not using `^`) ranges, it will not do anything and should be avoided.
-
-Grammar for Ranges:
-```
-P -> "["E"]"
-E -> "{"ToRange"}"InvertibleRange | InvertibleRange
-InvertibleRange -> Range | "^"Range
-Range -> CharRange | ToRange
-CharRange -> v*
-ToRange -> v"-"v
-v -> all characters
-```
-
-
+There is also a short hand of an empty range `[]` which defines all characters `0-2^32`

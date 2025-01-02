@@ -27,7 +27,7 @@ InnerRange -> (RangeChars("-"RangeChars | RangeChars*))?
 RangeChars -> [^\^\-\{\}\\] | "\\^" | "\\-" | "\\{" | "\\}" | "\\\\"
 
 AllChars -> [^]
-
+WS -> 
 ```
 Note: V is all characters and WS is all white space characters.
 

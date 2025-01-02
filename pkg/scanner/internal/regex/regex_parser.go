@@ -8,7 +8,7 @@ import (
 // RegexParser will consume a regex string and return an AST
 type RegexParser struct {
 	grammar *grammar.Grammar
-	regex   []rune
+	regex   []rune 
 	index   int //index points to the current unconsumed byte in regex
 }
 

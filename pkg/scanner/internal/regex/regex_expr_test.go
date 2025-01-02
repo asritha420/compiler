@@ -1,11 +1,12 @@
 package regex
 
 import (
+	"fmt"
 	"testing"
 	// "asritha.dev/compiler/pkg/scanner/internal/fsm"
 )
 
-func TestSimple(t *testing.T) {
+func TestEqualSimple(t *testing.T) {
 	a := NewConst('a')
 	b := NewConst('b')
 	c := NewConst('c')
