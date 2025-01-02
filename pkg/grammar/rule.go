@@ -5,3 +5,6 @@ type Rule struct {
 	productions         []production
 	FirstSet, FollowSet []rune
 }
+
+
+

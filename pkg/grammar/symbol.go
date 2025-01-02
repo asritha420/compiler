@@ -17,7 +17,7 @@ func (s symbolType) String() string {
 
 type symbol struct {
 	symbolType    symbolType
-	validLiterals []string
+	validLiterals []string //replace with isValid function? 
 }
 
 func newNonTerminalSymbol(literal string) *symbol {

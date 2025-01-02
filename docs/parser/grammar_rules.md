@@ -73,8 +73,6 @@ grammar := [][]rune{
 ```
 
 
-
-
 ---
 ### Production Rules
 #### Grammar (Using Go String formatting)
@@ -109,7 +107,7 @@ grammar = rule*
 ```
 
 #### Ranges
-Note: In order to use `-` or `\` in a range, please escape it.
+Note: In order to use `-` or `&` in a range, please escape it.
 
 In order to easily use a range of characters in a production, you can use square brackets with a range inside like so:
 
@@ -120,11 +118,3 @@ This however gets clunky if you have only a lot of disjoint characters that you 
 `[helowrd ]`
 
 There is also a short hand of an empty range `[]` which defines all characters `0-2^32`
-
-Grammar for Ranges:
-```
-Range = "[" RangeChar ("-" RangeChar | RangeChar*) "]";
-RangeChar = ([] - [\-\\]) | "\\\-" | "\\\\";
-```
-
-
