@@ -176,6 +176,18 @@ func TestGenerateFirstSet(t *testing.T) {
 		t.Errorf("TODO")
 	}
 
+	/*
+		validFirstSets:
+		production: (, v
+		expression: (, v
+		expressionPrime: |, epsilon
+		term: (, v
+		termPrime: (, v, epsilon
+		factor: (, v
+		factorPrime: *, epsilon
+		group: (, v
+	*/
+
 	_ = [][]rune{
 		{'(', 'v'}, // production
 		{'(', 'v'}, // expression

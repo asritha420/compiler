@@ -17,7 +17,7 @@ func (s symbolType) String() string {
 
 type symbol struct {
 	symbolType    symbolType
-	validLiterals []string //replace with isValid function? 
+	validLiterals []string //replace with isValid function?
 }
 
 func newNonTerminalSymbol(literal string) *symbol {
@@ -53,8 +53,8 @@ func newTerminalRangeSymbol(rangeType symbolType) *symbol {
 		from = 'A'
 		to = 'Z'
 	case terminalNumberRange:
-		from = 0
-		to = 9
+		from = '0' //0
+		to = '9'   //9
 	}
 
 	for l := from; l <= to; l++ {
