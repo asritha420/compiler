@@ -2,7 +2,6 @@ package grammar
 
 import (
 	"fmt"
-	"slices"
 )
 
 /*
@@ -23,8 +22,9 @@ For a non terminal X with production rule X -> Y_1Y_2...Y_n
 */
 
 var (
-	firstSets map[string][]rune       // the string can be any nonTerminal or terminal, not for ranges? -> should be symbol instead
-	rulesMap  map[string][]production // need to generate this?
+	firstSets         = make(map[string][]rune)       // the string can be any nonTerminal or terminal, not for ranges? -> should be symbol instead
+	rulesMap          = make(map[string][]production) // need to generate this?
+	epsilonValue rune = ' '
 )
 
 func (g *Grammar) generateFirstSets() error {
@@ -33,121 +33,89 @@ func (g *Grammar) generateFirstSets() error {
 	}
 
 	for _, rule := range g.Rules {
-		for _, p := range rule.productions { //should treat each individual rule prod as a rule?
-			_, _ = g.generateFirstSetFOR(&p)
+		firstSet, err := g.generateFirstSetFor(rule)
+		if err != nil {
+			return err
+		}
+		if existingFirstSet, ok := firstSets[rule.nonTerminal]; ok {
+			firstSets[rule.nonTerminal] = append(existingFirstSet, firstSet...)
+		} else {
+			firstSets[rule.nonTerminal] = firstSet
 		}
 	}
 
 	for _, rule := range g.Rules {
-		fmt.Printf("RULE for %s \n", rule.nonTerminal)
+		fmt.Printf("FIRST SET for %s \n", rule.nonTerminal)
 		fmt.Printf("%v", rule.FirstSet)
 	}
 
 	return nil
 }
 
-func (g *Grammar) generateFirstSetFOR(p *production) ([]rune, error) {
-	var OGNTFirstset []rune
-	for i, s := range *p {
-		switch s.symbolType {
-		case terminal:
-			terminalValue := s.validLiterals[0]
-			firstLetter := []rune(terminalValue)[0]
-			firstSets[terminalValue] = []rune{firstLetter}
-		case terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange:
-			var test []rune
-			for _, validLiteral := range s.validLiterals {
-				test = append(test, []rune(validLiteral)[0])
-			}
-		case nonTerminal:
-			productions := rulesMap[s.validLiterals[0]]
-
-			var nonTerminalFirstSet []rune // each first set for a rule/non-terminal will contain first sets from BOTH productions
-			for _, p := range productions {
-				firstSet, err := g.generateFirstSetFOR(&p)
-				if err != nil {
-					return nil, err
-				}
-				nonTerminalFirstSet = append(nonTerminalFirstSet, firstSet...)
-			}
-
-			containsEpsilon := false
-			// TODO: def a better way to do this
-			for _, lol := range nonTerminalFirstSet {
-				if lol == ' ' { // append everything but the epsilon to the OGNTFIrstSet
-					containsEpsilon = true // so go to the next one
-				} else {
-					OGNTFirstset = append(OGNTFirstset, lol)
-				}
-			}
-
-			if !containsEpsilon {
-				break
-			}
-
-			if i == len(*p)-1 && containsEpsilon {
-				OGNTFirstset = append(OGNTFirstset, ' ')
-			}
-			// TODO: set it in the map so dont have to recalculate recursively? (ie. memoization) for the NTs
-		}
-	}
-	return OGNTFirstset, nil
-}
-
-// recursively call itself? TODO: remainingSymbols should be pointer
-func (g *Grammar) generateFirstSetFor(nT string) ([]rune, error) { // should be symbol instead of nT
-	for _, p := range rulesMap[nT] {
-		allEpsilon := true
-		for _, s := range p {
+func (g *Grammar) generateFirstSetFor(rule *Rule) ([]rune, error) {
+	var ruleFirstSet []rune
+	for _, prod := range rule.productions { // for each production within the Rule's productions list
+		for i, s := range prod { // for each symbol within the current production
 			switch s.symbolType {
+			// if the symbol is a terminal
 			case terminal:
 				terminalValue := s.validLiterals[0]
 				firstLetter := []rune(terminalValue)[0]
 				firstSets[terminalValue] = []rune{firstLetter}
-				return firstSets[terminalValue], nil
 			case terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange:
-				var test []rune
+				var rangeValue []rune
 				for _, validLiteral := range s.validLiterals {
-					test = append(test, []rune(validLiteral)[0])
+					rangeValue = append(rangeValue, []rune(validLiteral)[0])
 				}
-				return test, nil
+				firstSets["RANGE"] = rangeValue //TODO: this is scuffed, also should be memoized
 			case nonTerminal:
-				/*
-					get firstSet for the nonTerminal recursively
-					if that firstSet contains epsilon, proceed to next iteration
-				*/
-				firstSet, err := g.generateFirstSetFor(s.validLiterals[0])
+				nT := s.validLiterals[0]
+				var nTRule *Rule
+				var nonTerminalFirstSet []rune
+
+				// find corresponding rule for the nonTerminal
+				for _, gRule := range g.Rules {
+					if gRule.nonTerminal == nT {
+						nTRule = gRule
+					}
+				}
+
+				if nTRule == nil {
+					return nil, fmt.Errorf("invalid non terminal: %s", nT)
+				}
+
+				// recursively generate the firstSet for that nonTerminal
+				firstSet, err := g.generateFirstSetFor(nTRule)
 				if err != nil {
 					return nil, err
 				}
-				if value, ok := firstSets[nT]; ok {
-					firstSets[nT] = append(value, firstSet...)
-				} else {
-					firstSets[nT] = firstSet
+				nonTerminalFirstSet = append(nonTerminalFirstSet, firstSet...)
+				firstSets[nT] = nonTerminalFirstSet
+
+				containsEpsilon := false
+
+				// append all symbols in the nonTerminalFirstSet (FIRST(Y_i)) except epsilon
+				for _, firstSetSymbol := range nonTerminalFirstSet {
+					if firstSetSymbol == epsilonValue {
+						containsEpsilon = true
+					} else {
+						ruleFirstSet = append(ruleFirstSet, firstSetSymbol)
+					}
 				}
-				/*
-					- for the rest of the symbols in the curr production left, keep going until none of them have epsilon, add as you keep going
-					- if all of them have epsilon, add epsilon to firstX //TODO: should have a getNewEpsilon()? instead of using getNewTerminal?
-				*/
-				if !slices.Contains(firstSet, ' ') { //one of them does not contain an epsilon
-					allEpsilon = false
-					break // stop the for loop
+
+				// continue to next symbol if it contains epsilon
+				if !containsEpsilon {
+					break
 				}
-			case epsilon:
-				return []rune{' '}, nil
-			default:
-				return nil, fmt.Errorf("g.generateFirstSets(): symbol has invalid symbol type") // TODO: fix
-			}
-		}
-		if allEpsilon {
-			if value, ok := firstSets[nT]; ok {
-				firstSets[nT] = append(value, ' ')
-			} else {
-				firstSets[nT] = []rune{' '}
+
+				// if all Y_1, Y_2, ... Y_n can derive epsilon, add epsilon to FIRST(X)
+				if i == len(prod)-1 && containsEpsilon {
+					ruleFirstSet = append(ruleFirstSet, epsilonValue)
+				}
 			}
 		}
 	}
-	return firstSets[nT], nil
+	return ruleFirstSet, nil
 }
 
 // TODO: rename the symbol and production type to gSymbol, gProduction? so I don't hve to use letters in all for loops? or make sure all for loops have letters for consistency -> actually just use letters, just make sure that the same letters everywhere exist

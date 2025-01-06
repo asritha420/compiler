@@ -188,29 +188,6 @@ func TestGenerateFirstSet(t *testing.T) {
 	}
 
 	g.generateFirstSets()
-
-	/*
-		rules = []string{
-			`production = expression`,
-			`expression = term expressionPrime`,
-			`expressionPrime = "|" term expressionPrime | " "`, //TODO: write in the spec how EPSILON should be specified as " "
-			`term = factor termPrime`,
-			`termPrime = factor termPrime | " "`,
-			`factor = group factorPrime`,
-			`factorPrime = "*" factorPrime | " "`,
-			`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`,
-		}
-
-			- start at first rule
-			- for each production within each rule
-			- loop through symbols in first rule
-				- if it hits a nonTerminal, call the recursive getFirstSetForNonTerminal
-					- set the returned results = to the first set of the rule's NT,
-					- if it is not the last symbol in the production:
-						- keep looping through rest of symbols. if it's a nonTerminal, call recursively. keep looping until it finds one w/ a first set that does not contain epsilon.
-							- then add the first set of that to the og nonTerminal first set
-					- if all of them have epsilon then add epsilon to the og first set
-	*/
-
 }
+
 func TestGenerateFollowSet(t *testing.T) {}
