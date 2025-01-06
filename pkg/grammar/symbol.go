@@ -15,9 +15,13 @@ func (s symbolType) String() string {
 	return [...]string{"nonTerminal", "terminal", "terminalLowercaseRange", "terminalUppercaseRange", "terminalNumberRange", "epsilon"}[s]
 }
 
+func (s symbolType) isValid() bool {
+
+}
+
 type symbol struct {
 	symbolType    symbolType
-	validLiterals []string //replace with isValid function?
+	validLiterals []string // replace with isValid function?
 }
 
 func newNonTerminalSymbol(literal string) *symbol {
