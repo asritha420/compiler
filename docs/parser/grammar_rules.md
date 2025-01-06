@@ -77,8 +77,7 @@ grammar := [][]rune{
 ### Production Rules
 #### Grammar (Using Go String formatting)
 ```
-rangeChar = ([] - [&-&&]) | "&&-" | "&&&&";
-identifierChar = [a-z] | [A-Z] | [0-9] | "_";
+rangeChar = ([] - [&-&&&[&]]) | "&&-" | "&&&&" | "&&[" | "&&]";identifierChar = [a-z] | [A-Z] | [0-9] | "_";
 stringChar = ([] - ["&&]) | "&&&"" | "&&&&";
 spaceChar = [\t\n\v\f\rU+0085U+00A0];
 

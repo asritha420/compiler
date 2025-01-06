@@ -1,0 +1,28 @@
+rangeChar = ([] - [&-&&&[&]]) | "&&-" | "&&&&" | "&&[" | "&&]";identifierChar = [a-z] | [A-Z] | [0-9] | "_";
+stringChar = ([] - ["&&]) | "&&&"" | "&&&&";
+spaceChar = [\t\n\v\f\rU+0085U+00A0];
+
+terminal = "&"" stringChar* "&"";
+identifier = identifierChar+;
+toRange = (rangeChar "-" rangeChar);
+charRange = rangeChar*;
+range = "[" toRange | charRange "]";
+
+space = spaceChar*;
+
+term = "(" RHS ")"
+     | terminal
+     | identifier
+     | range;
+
+factor = term (space ([?*+] | ("-" space term)))?;
+
+concatenation = factor (space factor)*;
+alternation = concatenation (space "|" space concatenation)*;
+
+RHS = space alternation space;
+LHS = space identifier space;
+
+rule = LHS "=" RHS ";";
+
+grammar = rule*;
