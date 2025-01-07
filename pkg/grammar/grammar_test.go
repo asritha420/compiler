@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TODO: fix this test file, its a mess
 var (
 	rules = []string{
 		`production = expression`,
