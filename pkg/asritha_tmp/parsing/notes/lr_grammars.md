@@ -17,8 +17,22 @@
   - *reduce action*: apply one from of the form $A \rightarrow a$ from grammar, so replaces sentential form $a$ on stack with the corresponding non-terminal
 
 
-- LR(0) automaton: all possible rules currently under consideration by a shift-reduce parser
-  - also called canonical collection or compact finite state machine of grammar 
+- *LR(0) automaton*: represents choices available at any step of bottom up parsing  
+  - also called canonical collection or compact finite state machine of grammar
+  - algorithm:
+    - Create State 0
+      - Get Kernel of State 0 
+      - Get Closure of State 0: for each item in the state with a non-terminal X immediately to the right of the dot, add all rules in the grammar that have X as a non-terminal
+      - Create transitions for each of the symbols to the right of the dot 
+    - For each transition, create a new state containing the matching items with dot moved one position to the right. Continue procedure until no new items can be added
+    - Key points: 
+      - kernel items: start items + items where dot is not at the beginning 
+      - non-kernel items: items introduced by the closure operation 
+  - state w/ item w/ dot at end rule: possible reduction 
+  - transition on a terminal that moves dot one position to the right: possible shift
+  - conflicts: 
+    - *shift-reduce conflict*: choice between shift action and reduce action in the same state 
+    - *reduce-reduce conflict*: two distinct rules have been matched 
 
 --- 
 

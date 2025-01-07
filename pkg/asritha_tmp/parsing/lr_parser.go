@@ -11,40 +11,11 @@ type ShiftReduceParser struct {
 	indexer
 }
 
-// LR0Automaton represents all possible rules currently under consideration by a shit-reduce parser
-type LR0Automaton struct {
-}
-
-type StateRule struct {
-	*Rule
-	// dot indicates the parser's current position in the rule
-	dotIsToTheRightOf int
-}
-
-type State struct {
-	rules       []*StateRule
-	transitions map[rune]*State
-}
-
-func NewState() *State {
-
-}
-
 func NewShiftReduceParser(g *LRGrammar) *ShiftReduceParser {
 	srp := &ShiftReduceParser{
 		stack:     make(stack, 0),
 		LRGrammar: g,
 		indexer:   indexer{},
-	}
-
-	state0 := &State{
-		// creates kernel of state
-		rules: []*StateRule{
-			{
-				Rule:              g.rules[0],
-				dotIsToTheRightOf: 0,
-			},
-		},
 	}
 
 	return srp
