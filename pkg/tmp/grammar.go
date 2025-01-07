@@ -43,7 +43,8 @@ func newRule(nonTerm string, sententialForm ...*symbol) *rule {
 }
 
 type grammar struct {
-	rules []*rule
+	rules     []*rule
+	ruleNTMap map[string][]*rule
 
 	firstSets  map[string]map[symbol]struct{}
 	followSets map[string]map[symbol]struct{}
@@ -64,11 +65,13 @@ func newGrammar(rules ...*rule) *grammar {
 }
 
 func (g *grammar) initializeSets() {
-	for _, rule := range g.rules {
-		if _, ok := g.firstSets[rule.nonTerm]; !ok {
-			g.firstSets[rule.nonTerm] = make(map[symbol]struct{})
-			g.followSets[rule.nonTerm] = make(map[symbol]struct{})
+	for _, r := range g.rules {
+		if _, ok := g.firstSets[r.nonTerm]; !ok {
+			g.firstSets[r.nonTerm] = make(map[symbol]struct{})
+			g.followSets[r.nonTerm] = make(map[symbol]struct{})
+			g.ruleNTMap[r.nonTerm] = make([]*rule, 0)
 		}
+		g.ruleNTMap[r.nonTerm] = append(g.ruleNTMap[r.nonTerm], r)
 	}
 }
 
@@ -95,7 +98,7 @@ func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{
 		symbol := sententialForm[sententialFormIdx]
 		switch symbol.sType {
 		case terminal, token:
-			firstSet[*symbol] = struct{}{} 
+			firstSet[*symbol] = struct{}{}
 			// weird edge case where they put more symbols after an epsilon symbol
 			if *symbol == epsilon {
 				sententialFormIdx++
@@ -162,30 +165,123 @@ func (g *grammar) generateFollowSets() {
 	}
 }
 
+type augmentedRule struct {
+	rule      *rule
+	position  int
+	lookahead map[symbol]struct{}
+}
+
+func (g *grammar) getNextSymbol(ar *augmentedRule) *symbol {
+	//Note: position should NOT be more than len(sententialForm)
+	if ar.position == len(ar.rule.sententialForm) {
+		if ar.rule == g.rules[0] {
+			return &endOfFile
+		}
+		return nil
+	}
+	return ar.rule.sententialForm[ar.position]
+}
+
+func newAugmentedRule(r *rule, position int) *augmentedRule {
+	return &augmentedRule{
+		rule:      r,
+		position:  position,
+		lookahead: make(map[symbol]struct{}),
+	}
+}
+
+type lr1AutomationState struct {
+	id             uint
+	augmentedRules []*augmentedRule
+	transitions    map[symbol]*lr1AutomationState
+}
+
+func newLR1AutomationState(id *uint) *lr1AutomationState {
+	*id++
+	return &lr1AutomationState{
+		id:             *id - 1,
+		augmentedRules: make([]*augmentedRule, 0),
+		transitions:    make(map[symbol]*lr1AutomationState),
+	}
+}
+
+func (g *grammar) getClosureRecursion(ar *augmentedRule, closure []*augmentedRule) []*augmentedRule {
+	closure = append(closure, ar)
+
+	nextSymbol := g.getNextSymbol(ar)
+	if nextSymbol == nil || nextSymbol.sType != nonTerm {
+		return closure
+	}
+
+	// nextSymbol is a NT
+	for _, r := range g.ruleNTMap[nextSymbol.data] {
+		newAR := newAugmentedRule(r, 0)
+		closure = g.getClosureRecursion(newAR, closure)
+	}
+
+	return closure
+}
+
+func (g *grammar) getClosure(ars ...*augmentedRule) []*augmentedRule {
+	closure := make([]*augmentedRule, 0)
+	for _, ar := range ars {
+		closure = g.getClosureRecursion(ar, closure)
+	}
+	return closure
+}
+
+func (g *grammar) getNextStates()
+
+func (g *grammar) generateLR1() *lr1AutomationState {
+	var id uint = 0
+	kernel := newLR1AutomationState(&id)
+	startRule := newAugmentedRule(g.rules[0], 0)
+	kernel.augmentedRules = g.getClosure(startRule)
+
+}
+
 func main() {
+	// E := newSymbol(nonTerm, "E")
+	// EP := newSymbol(nonTerm, "E'")
+	// T := newSymbol(nonTerm, "T")
+	// TP := newSymbol(nonTerm, "T'")
+	// F := newSymbol(nonTerm, "F")
+
+	// plus := newSymbol(terminal, "+")
+	// i := newSymbol(token, "int")
+	// lParen := newSymbol(terminal, "(")
+	// rParen := newSymbol(terminal, ")")
+	// mult := newSymbol(terminal, "*")
+
+	// r1 := newRule("P", E)
+	// r2 := newRule("E", T, EP)
+	// r3 := newRule("E'", plus, T, EP)
+	// r4 := newRule("E'", &epsilon)
+	// r5 := newRule("T", F, TP)
+	// r6 := newRule("T'", mult, F, TP)
+	// r7 := newRule("T'", &epsilon)
+	// r8 := newRule("F", lParen, E, rParen)
+	// r9 := newRule("F", i)
+
+	// g := newGrammar(r1, r2, r3, r4, r5, r6, r7, r8, r9)
+
+	// print(g)
+
 	E := newSymbol(nonTerm, "E")
-	EP := newSymbol(nonTerm, "E'")
 	T := newSymbol(nonTerm, "T")
-	TP := newSymbol(nonTerm, "T'")
-	F := newSymbol(nonTerm, "F")
 
 	plus := newSymbol(terminal, "+")
-	i := newSymbol(token, "int")
+	id := newSymbol(token, "id")
 	lParen := newSymbol(terminal, "(")
 	rParen := newSymbol(terminal, ")")
-	mult := newSymbol(terminal, "*")
 
 	r1 := newRule("P", E)
-	r2 := newRule("E", T, EP)
-	r3 := newRule("E'", plus, T, EP)
-	r4 := newRule("E'", &epsilon)
-	r5 := newRule("T", F, TP)
-	r6 := newRule("T'", mult, F, TP)
-	r7 := newRule("T'", &epsilon)
-	r8 := newRule("F", lParen, E, rParen)
-	r9 := newRule("F", i)
+	r2 := newRule("E", E, plus, T)
+	r3 := newRule("E", T)
+	r4 := newRule("T", id, lParen, E, rParen)
+	r5 := newRule("T", id)
 
-	g := newGrammar(r1, r2, r3, r4, r5, r6, r7, r8, r9)
+	g := newGrammar(r1, r2, r3, r4, r5)
 
 	print(g)
 }
