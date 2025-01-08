@@ -401,4 +401,34 @@ func main() {
 	g := newGrammar(r1, r2, r3, r4, r5)
 	graph := g.generateLR1()
 	fmt.Print(graph)
+
+	m := NewMap[Int, int]()
+	m.Put(Int{i:4}, 1)
+	m.Put(Int{i:1}, 2)
+	m.Put(Int{i:2}, 3)
+	m.Put(Int{i:7}, 4)
+	m.Put(Int{i:9}, 5)
+	m.Put(Int{i:12}, 6)
+	m.Put(Int{i:34}, 7)
+	m.Put(Int{i:0}, 8)
+
+	m.Remove(Int{i:12})
+	print(m.Get(Int{i:35}))
+}
+
+type Int struct {
+	i int
+}
+
+func (i Int) Hash() int {
+	return i.i
+}
+
+func (i Int) Equal(other Mappable) bool {
+	otherI, ok := other.(Int)
+	if !ok {
+		return false
+	}
+
+	return otherI.i == i.i
 }
