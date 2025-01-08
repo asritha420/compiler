@@ -127,6 +127,7 @@ func (rs *RuleScanner) consumeTerminalRange() (symbolType, error) {
 	}
 }
 
+// TODO: move to being functions on the symbolType itself
 func (rs *RuleScanner) isValidTerminal(candidate string) bool {
 	return slices.Contains(rs.validTerminals, candidate)
 }
