@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 type symbolType int
 
 // Note: even if a token is empty (epsilon), it must be passed to the parser.
@@ -30,6 +34,10 @@ func newSymbol(sType symbolType, data string) *symbol {
 	}
 }
 
+func (s symbol) String() string {
+	return s.data
+}
+
 type rule struct {
 	nonTerm        string
 	sententialForm []*symbol
@@ -40,6 +48,14 @@ func newRule(nonTerm string, sententialForm ...*symbol) *rule {
 		nonTerm:        nonTerm,
 		sententialForm: sententialForm,
 	}
+}
+
+func (r rule) String() string {
+	output := r.nonTerm + "="
+	for _, s := range r.sententialForm {
+		output += s.String()
+	}
+	return output
 }
 
 type grammar struct {
@@ -55,6 +71,7 @@ func newGrammar(rules ...*rule) *grammar {
 		rules:      rules,
 		firstSets:  make(map[string]map[symbol]struct{}),
 		followSets: make(map[string]map[symbol]struct{}),
+		ruleNTMap:  make(map[string][]*rule),
 	}
 
 	g.initializeSets()
@@ -89,10 +106,11 @@ func addToSet(src, dst map[symbol]struct{}) bool {
 func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{} {
 	firstSet := make(map[symbol]struct{})
 	sententialFormIdx := 0
+sententialLoop:
 	for {
 		if sententialFormIdx == len(sententialForm) {
 			firstSet[epsilon] = struct{}{}
-			goto sententialEnd
+			break sententialLoop
 		}
 
 		symbol := sententialForm[sententialFormIdx]
@@ -103,7 +121,7 @@ func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{
 			if *symbol == epsilon {
 				sententialFormIdx++
 			} else {
-				goto sententialEnd
+				break sententialLoop
 			}
 
 		case nonTerm:
@@ -115,13 +133,12 @@ func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{
 				firstSet[s] = struct{}{}
 			}
 			if !containsEpsilon {
-				goto sententialEnd
+				break sententialLoop
 			}
 
 			sententialFormIdx++
 		}
 	}
-sententialEnd:
 	return firstSet
 }
 
@@ -171,28 +188,53 @@ type augmentedRule struct {
 	lookahead map[symbol]struct{}
 }
 
-func (g *grammar) getNextSymbol(ar *augmentedRule) *symbol {
+func newAugmentedRule(r *rule, position int) *augmentedRule {
+	return &augmentedRule{
+		rule: r,
+		position: position,
+		lookahead: make(map[symbol]struct{}),
+	}
+}
+
+/*
+Returns a copy of the augment rule with the position shifted one to the right (next symbol)
+*/
+func (ar *augmentedRule) shiftedCopy() *augmentedRule {
+	if ar.position == len(ar.rule.sententialForm) {
+		return nil
+	}
+	return newAugmentedRule(ar.rule, ar.position+1)
+}
+
+/*
+Returns the next symbol (symbol to right of position) in an augmented rule or nil if there is no next symbol
+*/
+func (ar *augmentedRule) getNextSymbol() *symbol {
 	//Note: position should NOT be more than len(sententialForm)
 	if ar.position == len(ar.rule.sententialForm) {
-		if ar.rule == g.rules[0] {
-			return &endOfFile
-		}
 		return nil
 	}
 	return ar.rule.sententialForm[ar.position]
 }
 
-func newAugmentedRule(r *rule, position int) *augmentedRule {
-	return &augmentedRule{
-		rule:      r,
-		position:  position,
-		lookahead: make(map[symbol]struct{}),
+func (ar augmentedRule) String() string {
+	// TODO add lookahead
+	output := ar.rule.nonTerm + "="
+	for i, s := range ar.rule.sententialForm {
+		if(ar.position == i) {
+			output += "."
+		}
+		output += s.String()
 	}
+	if (ar.position == len(ar.rule.sententialForm)) {
+		output += "."
+	}
+	return output
 }
 
 type lr1AutomationState struct {
 	id             uint
-	augmentedRules []*augmentedRule
+	augmentedRules map[*augmentedRule]struct{}
 	transitions    map[symbol]*lr1AutomationState
 }
 
@@ -200,44 +242,119 @@ func newLR1AutomationState(id *uint) *lr1AutomationState {
 	*id++
 	return &lr1AutomationState{
 		id:             *id - 1,
-		augmentedRules: make([]*augmentedRule, 0),
+		augmentedRules: make(map[*augmentedRule]struct{}),
 		transitions:    make(map[symbol]*lr1AutomationState),
 	}
 }
 
-func (g *grammar) getClosureRecursion(ar *augmentedRule, closure []*augmentedRule) []*augmentedRule {
-	closure = append(closure, ar)
+func (g *grammar) getClosureRecursion(ar *augmentedRule, closure map[*augmentedRule]struct{}, closed map[string]struct{}) {
+	if _, ok := closed[ar.String()]; ok {
+		return
+	}
 
-	nextSymbol := g.getNextSymbol(ar)
+	closed[ar.String()] = struct{}{}
+	closure[ar] = struct{}{}
+
+	nextSymbol := ar.getNextSymbol()
 	if nextSymbol == nil || nextSymbol.sType != nonTerm {
-		return closure
+		return
 	}
 
 	// nextSymbol is a NT
 	for _, r := range g.ruleNTMap[nextSymbol.data] {
 		newAR := newAugmentedRule(r, 0)
-		closure = g.getClosureRecursion(newAR, closure)
+		g.getClosureRecursion(newAR, closure, closed)
 	}
-
-	return closure
 }
 
-func (g *grammar) getClosure(ars ...*augmentedRule) []*augmentedRule {
-	closure := make([]*augmentedRule, 0)
+func (g *grammar) getClosure(ars ...*augmentedRule) map[*augmentedRule]struct{} {
+	closure := make(map[*augmentedRule]struct{})
+	closed := make(map[string]struct{})
+
 	for _, ar := range ars {
-		closure = g.getClosureRecursion(ar, closure)
+		g.getClosureRecursion(ar, closure, closed)
 	}
+
 	return closure
 }
 
-func (g *grammar) getNextStates()
+func (g *grammar) getTransitions(ars map[*augmentedRule]struct{}) map[symbol]map[*augmentedRule]struct{} {
+	transitions := make(map[symbol]map[*augmentedRule]struct{})
+	closed := make(map[symbol]map[string]struct{})
+	for ar := range ars {
+		nextSymbol := ar.getNextSymbol()
+		if nextSymbol == nil {
+			continue
+		}
+
+		if _, ok := transitions[*nextSymbol]; !ok {
+			transitions[*nextSymbol] = make(map[*augmentedRule]struct{})
+			closed[*nextSymbol] = make(map[string]struct{})
+		}
+		g.getClosureRecursion(ar.shiftedCopy(), transitions[*nextSymbol], closed[*nextSymbol])
+	}
+	return transitions
+}
+
+func equal(m1, m2 map[*augmentedRule]struct{}) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+	
+	strs := make(map[string]struct{})
+	for ar := range m1 {
+		strs[ar.String()] = struct{}{}
+	}
+
+	for ar := range m2 {
+		if _, ok := strs[ar.String()]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func findState(target map[*augmentedRule]struct{}, states []*lr1AutomationState) *lr1AutomationState {
+	for _, state := range states {
+		fmt.Printf("target: %v\n", target)
+		fmt.Printf("state : %v\n", state.augmentedRules)
+		if equal(target, state.augmentedRules) {
+			return state
+		}
+	}
+	return nil
+}
 
 func (g *grammar) generateLR1() *lr1AutomationState {
 	var id uint = 0
+
 	kernel := newLR1AutomationState(&id)
 	startRule := newAugmentedRule(g.rules[0], 0)
 	kernel.augmentedRules = g.getClosure(startRule)
 
+	states := []*lr1AutomationState{kernel}
+	openList := []*lr1AutomationState{kernel}
+	
+	for len(openList) > 0 {
+		state := openList[0]
+		openList = openList[1:]
+
+		for transition, rules := range g.getTransitions(state.augmentedRules) {
+			if transitionState := findState(rules, states); transitionState != nil {
+				state.transitions[transition] = transitionState
+				continue
+			}
+
+			newState := newLR1AutomationState(&id)
+			newState.augmentedRules = rules
+			state.transitions[transition] = newState
+			states = append(states, newState)
+			openList = append(openList, newState)
+		}
+	}
+
+	return kernel
 }
 
 func main() {
@@ -282,6 +399,6 @@ func main() {
 	r5 := newRule("T", id)
 
 	g := newGrammar(r1, r2, r3, r4, r5)
-
-	print(g)
+	graph := g.generateLR1()
+	fmt.Print(graph)
 }
