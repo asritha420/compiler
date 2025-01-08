@@ -12,47 +12,76 @@ type State struct {
 	transitions map[rune]*State
 }
 
+// TODO: figure out when to "reach accepting"
 // NewLR0Automaton creates a LR0Automaton, which represents all possible rules currently under consideration by a shit-reduce parser
 func (g *LRGrammar) NewLR0Automaton() *State {
-	state0 := g.NewState()
+	state0Kernel := []*StateItem{
+		{
+			Rule:              g.rules[0],
+			dotIsToTheRightOf: 0,
+		},
+	}
+	state0 := g.NewState(state0Kernel)
 	return state0
 }
 
-func (g *LRGrammar) NewState() *State {
+// TODO: create mermaid graph printer
+
+// TODO: if having same state, should point to same state instead of redoing it
+func (g *LRGrammar) NewState(kernel []*StateItem) *State {
 	s := &State{
 		items: make([]*StateItem, 0),
 	}
-	//TODO: have comment saying g.nonTerminals[0] is kernel? -> also this function should be reusable ??
-	s.getClosureFor(g, g.nonTerminals[0])
+	for _, kernelItem := range kernel {
+		s.getClosure(g, kernelItem)
+	}
+
+	s.CreateTransitions(g)
 	return s
 }
 
-// TODO: have separate fields for kernelItems and nonKernelItems in state?
-// TODO: don't like how I am passing in grammar
-//
-//	func (s *State) getClosure(g *LRGrammar) {
-//		s.items = s.getClosureFor(g, g.nonTerminals[0])
-//	} //
-//
-// start with P
-func (s *State) getClosureFor(g *LRGrammar, nT rune) {
-	// TODO: rename this nonKernelItems?
-	//startStateItems := make([]*StateItem, 0)
-	// add all rules in the grammar that have symbol as a non-terminal
-	matchingRules := g.getRulesForNT(nT)
-	for _, rule := range matchingRules {
-		item := &StateItem{
-			Rule:              rule,
-			dotIsToTheRightOf: 0,
+// create transititions for each symbol to the right of dot
+func (s *State) CreateTransitions(g *LRGrammar) {
+	// get list of all possible transitions
+	transitionKernels := make(map[rune][]*StateItem)
+	for _, item := range s.items {
+		if item.dotIsToTheRightOf == len(item.production) {
+			continue
+		}
+		transitionSymbol := item.production[item.dotIsToTheRightOf]
+
+		newItem := &StateItem{
+			Rule:              item.Rule,
+			dotIsToTheRightOf: item.dotIsToTheRightOf,
 		}
 
-		s.items = append(s.items, item)
+		if existing, ok := transitionKernels[transitionSymbol]; ok {
+			existing = append(existing, newItem)
+		} else {
+			transitionKernels[transitionSymbol] = append(existing, newItem)
+		}
+	}
 
-		// if dot is to the right of a non-terminal
-		symbol := item.Rule.production[item.dotIsToTheRightOf]
-		if g.isValidNonTerminal(symbol) && symbol != nT {
-			//startStateItems = append(startStateItems, s.getClosureFor(g, symbol)...)
-			s.getClosureFor(g, symbol)
+	for transition, kernel := range transitionKernels {
+		s.transitions[transition] = g.NewState(kernel)
+	}
+}
+
+// TODO: have separate fields for kernelItems and nonKernelItems in state?
+func (s *State) getClosure(g *LRGrammar, stateItem *StateItem) {
+	// add all rules in the grammar that have symbol as a non-terminal
+	symbol := stateItem.production[stateItem.dotIsToTheRightOf]
+	if g.isValidNonTerminal(symbol) && symbol != stateItem.nonTerminal {
+		matchingRules := g.getRulesForNT(symbol) //TODO: have consistent naming everywhere for nT/nonTerminal
+		for _, rule := range matchingRules {
+			item := &StateItem{
+				Rule:              rule,
+				dotIsToTheRightOf: 0,
+			}
+
+			s.items = append(s.items, item)
+
+			s.getClosure(g, item)
 		}
 	}
 }

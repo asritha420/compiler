@@ -24,7 +24,8 @@
       - Get Kernel of State 0 
       - Get Closure of State 0: for each item in the state with a non-terminal X immediately to the right of the dot, add all rules in the grammar that have X as a non-terminal
       - Create transitions for each of the symbols to the right of the dot 
-    - For each transition, create a new state containing the matching items with dot moved one position to the right. Continue procedure until no new items can be added
+    - For each transition, create a new state containing the matching items with dot moved one position to the right
+    - Continue procedure until no new items can be added
     - Key points: 
       - kernel items: start items + items where dot is not at the beginning 
       - non-kernel items: items introduced by the closure operation 
