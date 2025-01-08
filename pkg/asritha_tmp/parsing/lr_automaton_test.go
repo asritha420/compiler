@@ -88,7 +88,6 @@ var (
 			'i': state4,
 		},
 	}
-
 	state3 = &State{
 		items: []*StateItem{
 			// kernel
