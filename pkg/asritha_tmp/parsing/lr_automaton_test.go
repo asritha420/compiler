@@ -1,6 +1,7 @@
 package aparsing
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -220,11 +221,43 @@ func TestNewState(t *testing.T) {
 		},
 	}
 
-	kernel := &StateItem{
-		Rule:              pRule,
-		dotIsToTheRightOf: 0,
+	kernel := []*StateItem{
+		{
+			Rule:              pRule,
+			dotIsToTheRightOf: 0,
+		},
 	}
+
 	if !reflect.DeepEqual(shouldEqual, grammar10.NewState(kernel)) {
 		t.Errorf("FAILED")
 	}
+}
+
+func TestMermaidString(t *testing.T) {
+	startState := &State{
+		items: []*StateItem{
+			{
+				Rule:              pRule,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              eRule,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              eRule2,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              tRule2,
+				dotIsToTheRightOf: 0,
+			},
+		},
+	}
+
+	fmt.Println(startState.printInMermaid(0))
 }
