@@ -20,10 +20,13 @@ var (
 	acceptState = &State{}
 	state0      = &State{
 		items: []*StateItem{
+			// kernel
 			{
 				Rule:              pRule,
 				dotIsToTheRightOf: 0,
 			},
+
+			// non-kernel
 			{
 				Rule:              eRule,
 				dotIsToTheRightOf: 0,
@@ -46,6 +49,7 @@ var (
 
 	state1 = &State{
 		items: []*StateItem{
+			// kernel
 			{
 				Rule:              pRule,
 				dotIsToTheRightOf: 1,
@@ -68,7 +72,7 @@ var (
 				Rule:              eRule,
 				dotIsToTheRightOf: 2,
 			},
-			// closure
+			// non-kernel
 			{
 				Rule:              tRule,
 				dotIsToTheRightOf: 0,
@@ -83,12 +87,97 @@ var (
 			'i': state4,
 		},
 	}
-	state3 = &State{}
-	state4 = &State{}
-	state5 = &State{}
-	state6 = &State{}
-	state7 = &State{}
-	state8 = &State{}
+
+	state3 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              eRule,
+				dotIsToTheRightOf: 3,
+			},
+		},
+	}
+	state4 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 1,
+			},
+			{
+				Rule:              tRule2,
+				dotIsToTheRightOf: 2,
+			},
+		},
+		transitions: map[rune]*State{
+			'(': state5,
+		},
+	}
+	state5 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 3,
+			},
+			// non-kernel items
+			{
+				Rule:              eRule,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              eRule2,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 0,
+			},
+			{
+				Rule:              tRule2,
+				dotIsToTheRightOf: 0,
+			},
+		},
+		transitions: map[rune]*State{
+			'i': state4,
+			'T': state8,
+			'E': state6,
+		},
+	}
+	state6 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 4,
+			},
+			{
+				Rule:              eRule,
+				dotIsToTheRightOf: 1,
+			},
+		},
+		transitions: map[rune]*State{
+			')': state7,
+		},
+	}
+	state7 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              tRule,
+				dotIsToTheRightOf: 4,
+			},
+		},
+	}
+	state8 = &State{
+		items: []*StateItem{
+			// kernel
+			{
+				Rule:              eRule2,
+				dotIsToTheRightOf: 1,
+			},
+		},
+	}
 )
 
 var (

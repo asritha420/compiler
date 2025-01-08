@@ -4,9 +4,10 @@ package aparsing
 type StateItem struct {
 	*Rule
 	// dot indicates the parser's current position in the rule
-	dotIsToTheRightOf int
+	dotIsToTheRightOf int //make required somehow, but it wont matter bc a user won't initalize this?
 }
 
+// TODO: have field tags for kernel vs non-kernel items
 type State struct {
 	items       []*StateItem
 	transitions map[rune]*State
