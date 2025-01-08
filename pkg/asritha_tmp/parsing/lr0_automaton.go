@@ -58,7 +58,7 @@ func (s *State) CreateTransitions(g *LRGrammar) {
 
 		newItem := &StateItem{
 			Rule:              item.Rule,
-			dotIsToTheRightOf: item.dotIsToTheRightOf,
+			dotIsToTheRightOf: item.dotIsToTheRightOf + 1,
 		}
 
 		if existing, ok := transitionKernels[transitionSymbol]; ok {
