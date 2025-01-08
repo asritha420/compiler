@@ -7,7 +7,12 @@ type StateItem struct {
 	dotIsToTheRightOf int //make required somehow, but it wont matter bc a user won't initalize this?
 }
 
-// TODO: have field tags for kernel vs non-kernel items
+// TODO: call this DocGenerator?
+type MermaidPrinter interface {
+	printInMermaid() string
+}
+
+// TODO: have field tags for kernel vs non-kernel items ??
 type State struct {
 	items       []*StateItem
 	transitions map[rune]*State
