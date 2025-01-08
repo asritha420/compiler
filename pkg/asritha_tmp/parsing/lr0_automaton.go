@@ -64,7 +64,7 @@ func (s *State) CreateTransitions(g *LRGrammar) {
 		if existing, ok := transitionKernels[transitionSymbol]; ok {
 			existing = append(existing, newItem)
 		} else {
-			transitionKernels[transitionSymbol] = append(existing, newItem)
+			transitionKernels[transitionSymbol] = []*StateItem{newItem}
 		}
 	}
 
