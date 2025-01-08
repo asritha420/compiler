@@ -18,6 +18,32 @@ type State struct {
 	transitions map[rune]*State
 }
 
+type LR0Automaton struct{}
+
+func (lra *LR0Automaton) printInMermaid() string {
+	return ""
+}
+
+func (s *State) printInMermaid(counter int) string {
+	var mermaidString string // TODO: rename
+
+	for _, item := range s.items {
+		var itemProduction string
+		// TODO: simpler way to do this??
+		for index, symbol := range item.production {
+			if item.dotIsToTheRightOf == index {
+				itemProduction = ". "
+			}
+			itemProduction += string(symbol) + " "
+		}
+		mermaidString = mermaidString + string(item.nonTerminal) + "= " + itemProduction + "\n"
+	}
+
+	mermaidString = "state" + string(counter) + "[\"`\n\t**State" + string(counter) + "[\"`]"
+
+	return mermaidString
+}
+
 // TODO: figure out when to "reach accepting"
 // NewLR0Automaton creates a LR0Automaton, which represents all possible rules currently under consideration by a shit-reduce parser
 func (g *LRGrammar) NewLR0Automaton() *State {
@@ -73,6 +99,8 @@ func (s *State) CreateTransitions(g *LRGrammar) {
 	}
 }
 
+// TODO: add more edge cases in test
+// TODO: handle edge case: E -> T + E; T -> E
 // TODO: have separate fields for kernelItems and nonKernelItems in state?
 func (s *State) getClosure(g *LRGrammar, stateItem *StateItem) {
 	// add all rules in the grammar that have symbol as a non-terminal
