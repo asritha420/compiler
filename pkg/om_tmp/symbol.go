@@ -2,8 +2,6 @@ package grammar
 
 import "asritha.dev/compiler/pkg/utils"
 
-
-
 type symbolType int
 
 // Note: even if a Token is empty (epsilon), it must be passed to the parser.

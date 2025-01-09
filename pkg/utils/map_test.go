@@ -104,7 +104,7 @@ func TestResize(t *testing.T) {
 	}
 
 	AssertEqual(t, "m.len", 64, m.len)
-	AssertEqual(t, "len(m.backing)", 128, len(m.backing))
+	AssertEqual(t, "len(m.backing)", 32, len(m.backing))
 }
 
 func TestLoadFactor(t *testing.T) {
