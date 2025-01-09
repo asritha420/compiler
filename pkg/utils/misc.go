@@ -28,6 +28,19 @@ func HashArr[T Hashable](arr []T) int {
 	return sum
 }
 
+func CompArrPtr[T Comparable[T]](arr1, arr2 []*T) bool {
+	if len(arr1) != len(arr2) {
+		return false
+	}
+
+	for i, elm := range arr1 {
+		if !(*elm).Equal(*arr2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func AssertEqual[T comparable](t *testing.T, varName string, expected T, actual T) {
 	if expected != actual {
 		t.Fatalf("Expected %s=%v got %s=%v", varName, expected, varName, actual)

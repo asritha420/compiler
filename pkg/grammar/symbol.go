@@ -1,72 +1,80 @@
 package grammar
 
-type symbolType int
+import "asritha.dev/compiler/pkg/utils"
 
+type symbolType int
+type TokenType int
+
+// Note: even if a Token is empty (epsilon), it must be passed to the parser.
+// Note: end of file should also be passed as a Token matching the endOfFile var
+// 
 const (
-	nonTerminal symbolType = iota
-	terminal
-	terminalLowercaseRange
-	terminalUppercaseRange
-	terminalNumberRange
-	epsilon
+	NonTerm symbolType = iota
+	Token
+	Epsilon
+	EndOfInput
 )
 
-func (s symbolType) String() string {
-	return [...]string{"nonTerminal", "terminal", "terminalLowercaseRange", "terminalUppercaseRange", "terminalNumberRange", "epsilon"}[s]
-}
+var (
+	EpsilonSymbol   = symbol{symbolType: Epsilon}
+	EndOfInputSymbol = symbol{symbolType: EndOfInput}
+)
 
-func (s symbolType) isValid() bool {
-
-}
-
+/*
+Represents a single symbol (can be either a non-terminal or a terminal/token)
+*/
 type symbol struct {
-	symbolType    symbolType
-	validLiterals []string // replace with isValid function?
+	symbolType
+	TokenType
+	data string
 }
 
-func newNonTerminalSymbol(literal string) *symbol {
+func (s symbol) Hash() int {
+	switch s.symbolType {
+	case NonTerm:
+		return utils.HashStr(s.data)
+	case Token:
+		return int(s.TokenType) + 2
+	case Epsilon:
+		return 0
+	case EndOfInput:
+		return 1
+	}
+	return -1
+}
+
+func (s symbol) Equal(other symbol) bool {
+	if s.symbolType != other.symbolType {
+		return false
+	}
+
+	if s.symbolType == EndOfInput || s.symbolType == Epsilon {
+		return true
+	}
+
+	if s.symbolType == NonTerm {
+		return s.data == other.data
+	}
+
+	return s.TokenType == other.TokenType
+}
+
+func NewNonTerm(name string) *symbol {
 	return &symbol{
-		symbolType:    nonTerminal,
-		validLiterals: []string{literal},
+		symbolType: NonTerm,
+		data: name,
 	}
 }
 
-func newTerminalSymbol(literal string) *symbol {
-	symbolType := terminal
-
-	if literal == " " {
-		symbolType = epsilon
-	}
-
+func NewToken(tokenType TokenType, data string) *symbol {
 	return &symbol{
-		symbolType:    symbolType,
-		validLiterals: []string{literal},
+		symbolType: Token,
+		TokenType: tokenType,
+		data: data,
 	}
 }
 
-func newTerminalRangeSymbol(rangeType symbolType) *symbol {
-	var validLiterals []string
-	var from rune
-	var to rune
-
-	switch rangeType {
-	case terminalLowercaseRange:
-		from = 'a'
-		to = 'z'
-	case terminalUppercaseRange:
-		from = 'A'
-		to = 'Z'
-	case terminalNumberRange:
-		from = '0' //0
-		to = '9'   //9
-	}
-
-	for l := from; l <= to; l++ {
-		validLiterals = append(validLiterals, string(l))
-	}
-
-	return &symbol{
-		symbolType:    rangeType,
-		validLiterals: validLiterals,
-	}
+//TODO
+func (s symbol) String() string {
+	return ""
 }
