@@ -1,6 +1,9 @@
 package utils
 
-import "testing"
+import (
+	"hash/fnv"
+	"testing"
+)
 
 /*
 Quickly remove an element at index i from array s.
@@ -11,6 +14,19 @@ func FastRemove[T any](s []T, i int) []T {
 	return s[:len(s)-1]
 }
 
+func HashStr(s string) int {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return int(h.Sum32())
+}
+
+func HashArr[T Hashable](arr []T) int {
+	sum := 0
+	for _, elm := range arr {
+		sum += elm.Hash()
+	}
+	return sum
+}
 
 func AssertEqual[T comparable](t *testing.T, varName string, expected T, actual T) {
 	if expected != actual {

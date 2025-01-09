@@ -1,62 +1,8 @@
-package main
+package grammar
 
 import (
 	"fmt"
 )
-
-type symbolType int
-
-// Note: even if a token is empty (epsilon), it must be passed to the parser.
-// Note: end of file should also be passed as a token matching the endOfFile var
-const (
-	nonTerm symbolType = iota
-	terminal
-	token
-)
-
-var (
-	epsilon   = symbol{sType: terminal, data: ""}
-	endOfFile = symbol{sType: token, data: "EOF"}
-)
-
-/*
-Represents a single symbol (can be either a non-terminal or a terminal/symbol)
-*/
-type symbol struct {
-	sType symbolType
-	data  string
-}
-
-func newSymbol(sType symbolType, data string) *symbol {
-	return &symbol{
-		sType: sType,
-		data:  data,
-	}
-}
-
-func (s symbol) String() string {
-	return s.data
-}
-
-type rule struct {
-	nonTerm        string
-	sententialForm []*symbol
-}
-
-func newRule(nonTerm string, sententialForm ...*symbol) *rule {
-	return &rule{
-		nonTerm:        nonTerm,
-		sententialForm: sententialForm,
-	}
-}
-
-func (r rule) String() string {
-	output := r.nonTerm + "="
-	for _, s := range r.sententialForm {
-		output += s.String()
-	}
-	return output
-}
 
 type grammar struct {
 	rules     []*rule
@@ -109,25 +55,25 @@ func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{
 sententialLoop:
 	for {
 		if sententialFormIdx == len(sententialForm) {
-			firstSet[epsilon] = struct{}{}
+			firstSet[Epsilon] = struct{}{}
 			break sententialLoop
 		}
 
 		symbol := sententialForm[sententialFormIdx]
 		switch symbol.sType {
-		case terminal, token:
+		case Terminal, Token:
 			firstSet[*symbol] = struct{}{}
 			// weird edge case where they put more symbols after an epsilon symbol
-			if *symbol == epsilon {
+			if *symbol == Epsilon {
 				sententialFormIdx++
 			} else {
 				break sententialLoop
 			}
 
-		case nonTerm:
+		case NonTerm:
 			containsEpsilon := false
 			for s := range g.firstSets[symbol.data] {
-				if s == epsilon {
+				if s == Epsilon {
 					containsEpsilon = true
 				}
 				firstSet[s] = struct{}{}
@@ -157,20 +103,20 @@ func (g *grammar) generateFirstSets() {
 
 func (g *grammar) generateFollowSets() {
 	// add EOF to first rule
-	g.followSets[g.rules[0].nonTerm][endOfFile] = struct{}{}
+	g.followSets[g.rules[0].nonTerm][EndOfFile] = struct{}{}
 
 	changeMade := true
 	for changeMade {
 		changeMade = false
 		for _, rule := range g.rules {
 			for i, s := range rule.sententialForm {
-				if s.sType != nonTerm {
+				if s.sType != NonTerm {
 					continue
 				}
 
 				firstSet := g.generateFirstSet(rule.sententialForm[i+1:]...)
-				_, containsEpsilon := firstSet[epsilon]
-				delete(firstSet, epsilon)
+				_, containsEpsilon := firstSet[Epsilon]
+				delete(firstSet, Epsilon)
 				if addToSet(firstSet, g.followSets[s.data]) {
 					changeMade = true
 				}
@@ -190,8 +136,8 @@ type augmentedRule struct {
 
 func newAugmentedRule(r *rule, position int) *augmentedRule {
 	return &augmentedRule{
-		rule: r,
-		position: position,
+		rule:      r,
+		position:  position,
 		lookahead: make(map[symbol]struct{}),
 	}
 }
@@ -221,12 +167,12 @@ func (ar augmentedRule) String() string {
 	// TODO add lookahead
 	output := ar.rule.nonTerm + "="
 	for i, s := range ar.rule.sententialForm {
-		if(ar.position == i) {
+		if ar.position == i {
 			output += "."
 		}
 		output += s.String()
 	}
-	if (ar.position == len(ar.rule.sententialForm)) {
+	if ar.position == len(ar.rule.sententialForm) {
 		output += "."
 	}
 	return output
@@ -256,7 +202,7 @@ func (g *grammar) getClosureRecursion(ar *augmentedRule, closure map[*augmentedR
 	closure[ar] = struct{}{}
 
 	nextSymbol := ar.getNextSymbol()
-	if nextSymbol == nil || nextSymbol.sType != nonTerm {
+	if nextSymbol == nil || nextSymbol.sType != NonTerm {
 		return
 	}
 
@@ -300,7 +246,7 @@ func equal(m1, m2 map[*augmentedRule]struct{}) bool {
 	if len(m1) != len(m2) {
 		return false
 	}
-	
+
 	strs := make(map[string]struct{})
 	for ar := range m1 {
 		strs[ar.String()] = struct{}{}
@@ -335,7 +281,7 @@ func (g *grammar) generateLR1() *lr1AutomationState {
 
 	states := []*lr1AutomationState{kernel}
 	openList := []*lr1AutomationState{kernel}
-	
+
 	for len(openList) > 0 {
 		state := openList[0]
 		openList = openList[1:]
@@ -384,13 +330,13 @@ func main() {
 
 	// print(g)
 
-	E := newSymbol(nonTerm, "E")
-	T := newSymbol(nonTerm, "T")
+	E := newSymbol(NonTerm, "E")
+	T := newSymbol(NonTerm, "T")
 
-	plus := newSymbol(terminal, "+")
-	id := newSymbol(token, "id")
-	lParen := newSymbol(terminal, "(")
-	rParen := newSymbol(terminal, ")")
+	plus := newSymbol(Terminal, "+")
+	id := newSymbol(Token, "id")
+	lParen := newSymbol(Terminal, "(")
+	rParen := newSymbol(Terminal, ")")
 
 	r1 := newRule("P", E)
 	r2 := newRule("E", E, plus, T)

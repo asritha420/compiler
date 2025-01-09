@@ -1,11 +1,19 @@
 package utils
 
+type Hashable interface {
+	Hash() int
+}
+
+type Comparable[K any] interface {
+	Equal(K) bool
+}
+
 /*
 Interface that must be implemented by the key of a map.
 */
 type Mappable[K any] interface {
-	Hash() int
-	Equal(K) bool
+	Hashable
+	Comparable[K]
 }
 
 type mapItem[K Mappable[K], V any] struct {
