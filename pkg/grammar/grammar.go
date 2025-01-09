@@ -1,14 +1,16 @@
 package grammar
 
-type grammar struct {
-	rules     []*rule
-	ruleNTMap map[string][]*rule
+import "asritha.dev/compiler/pkg/utils"
 
+type grammar struct {
+	rules []*rule
+
+	ruleNTMap  map[string][]*rule
 	firstSets  map[string]map[symbol]struct{}
 	followSets map[string]map[symbol]struct{}
 }
 
-func newGrammar(rules ...*rule) *grammar {
+func NewGrammar(rules ...*rule) *grammar {
 	g := &grammar{
 		rules:      rules,
 		firstSets:  make(map[string]map[symbol]struct{}),
@@ -34,17 +36,6 @@ func (g *grammar) initializeSets() {
 	}
 }
 
-func addToSet(src, dst map[symbol]struct{}) bool {
-	added := false
-	for s := range src {
-		if _, ok := dst[s]; !ok {
-			dst[s] = struct{}{}
-			added = true
-		}
-	}
-	return added
-}
-
 func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{} {
 	firstSet := make(map[symbol]struct{})
 	sententialFormIdx := 0
@@ -56,28 +47,23 @@ sententialLoop:
 		}
 
 		symbol := sententialForm[sententialFormIdx]
-		switch symbol.sType {
-		case Terminal, Token:
+		switch symbol.symbolType {
+		case epsilon:
+			sententialFormIdx++
+
+		// This really shouldn't be inside a rule (it should only be used in follow sets)
+		case endOfInput:
+			break sententialLoop
+
+		case token:
 			firstSet[*symbol] = struct{}{}
-			// weird edge case where they put more symbols after an epsilon symbol
-			if *symbol == Epsilon {
-				sententialFormIdx++
-			} else {
+			break sententialLoop
+
+		case nonTerm:
+			utils.AddToMap(g.firstSets[symbol.name], firstSet)
+			if _, containsEpsilon := g.firstSets[symbol.name][Epsilon]; !containsEpsilon {
 				break sententialLoop
 			}
-
-		case NonTerm:
-			containsEpsilon := false
-			for s := range g.firstSets[symbol.data] {
-				if s == Epsilon {
-					containsEpsilon = true
-				}
-				firstSet[s] = struct{}{}
-			}
-			if !containsEpsilon {
-				break sententialLoop
-			}
-
 			sententialFormIdx++
 		}
 	}
@@ -90,7 +76,7 @@ func (g *grammar) generateFirstSets() {
 		changeMade = false
 		for _, rule := range g.rules {
 			newFirstSet := g.generateFirstSet(rule.sententialForm...)
-			if addToSet(newFirstSet, g.firstSets[rule.nonTerm]) {
+			if utils.AddToMap(newFirstSet, g.firstSets[rule.nonTerm]) != 0 {
 				changeMade = true
 			}
 		}
@@ -99,24 +85,24 @@ func (g *grammar) generateFirstSets() {
 
 func (g *grammar) generateFollowSets() {
 	// add EOF to first rule
-	g.followSets[g.rules[0].nonTerm][EndOfFile] = struct{}{}
+	g.followSets[g.rules[0].nonTerm][EndOfInput] = struct{}{}
 
 	changeMade := true
 	for changeMade {
 		changeMade = false
 		for _, rule := range g.rules {
 			for i, s := range rule.sententialForm {
-				if s.sType != NonTerm {
+				if s.symbolType != nonTerm {
 					continue
 				}
 
 				firstSet := g.generateFirstSet(rule.sententialForm[i+1:]...)
 				_, containsEpsilon := firstSet[Epsilon]
 				delete(firstSet, Epsilon)
-				if addToSet(firstSet, g.followSets[s.data]) {
+				if utils.AddToMap(firstSet, g.followSets[s.name]) != 0 {
 					changeMade = true
 				}
-				if containsEpsilon && addToSet(g.followSets[rule.nonTerm], g.followSets[s.data]) {
+				if containsEpsilon && utils.AddToMap(g.followSets[rule.nonTerm], g.followSets[s.name]) != 0 {
 					changeMade = true
 				}
 			}
@@ -125,49 +111,16 @@ func (g *grammar) generateFollowSets() {
 }
 
 
-
-// func main() {
-// 	// E := newSymbol(nonTerm, "E")
-// 	// EP := newSymbol(nonTerm, "E'")
-// 	// T := newSymbol(nonTerm, "T")
-// 	// TP := newSymbol(nonTerm, "T'")
-// 	// F := newSymbol(nonTerm, "F")
-
-// 	// plus := newSymbol(terminal, "+")
-// 	// i := newSymbol(token, "int")
-// 	// lParen := newSymbol(terminal, "(")
-// 	// rParen := newSymbol(terminal, ")")
-// 	// mult := newSymbol(terminal, "*")
-
-// 	// r1 := newRule("P", E)
-// 	// r2 := newRule("E", T, EP)
-// 	// r3 := newRule("E'", plus, T, EP)
-// 	// r4 := newRule("E'", &epsilon)
-// 	// r5 := newRule("T", F, TP)
-// 	// r6 := newRule("T'", mult, F, TP)
-// 	// r7 := newRule("T'", &epsilon)
-// 	// r8 := newRule("F", lParen, E, rParen)
-// 	// r9 := newRule("F", i)
-
-// 	// g := newGrammar(r1, r2, r3, r4, r5, r6, r7, r8, r9)
-
-// 	// print(g)
-
-// 	E := newSymbol(NonTerm, "E")
-// 	T := newSymbol(NonTerm, "T")
-
-// 	plus := newSymbol(Terminal, "+")
-// 	id := newSymbol(Token, "id")
-// 	lParen := newSymbol(Terminal, "(")
-// 	rParen := newSymbol(Terminal, ")")
-
-// 	r1 := newRule("P", E)
-// 	r2 := newRule("E", E, plus, T)
-// 	r3 := newRule("E", T)
-// 	r4 := newRule("T", id, lParen, E, rParen)
-// 	r5 := newRule("T", id)
-
-// 	g := newGrammar(r1, r2, r3, r4, r5)
-// 	graph := g.generateLR1()
-// 	fmt.Print(graph)
-// }
+func (g *grammar) canProduceEpsilon(sententialForm ...*symbol) bool {
+	for _, s := range sententialForm {
+		switch s.symbolType {
+		case endOfInput, token:
+			return false
+		case nonTerm:
+			if _, containsEpsilon := g.firstSets[s.name][Epsilon]; !containsEpsilon {
+				return false
+			}
+		} 
+	}
+	return true
+}

@@ -1,7 +1,12 @@
 package grammar
 
 import (
+	"reflect"
 	"asritha.dev/compiler/pkg/utils"
+)
+
+var (
+	longestRule = 0
 )
 
 type rule struct {
@@ -10,10 +15,17 @@ type rule struct {
 }
 
 func NewRule(nonTerm string, sententialForm ...*symbol) *rule {
-	return &rule{
+	newRule := &rule{
 		nonTerm:        nonTerm,
 		sententialForm: sententialForm,
 	}
+	
+	len := len(newRule.String()) 
+	if len > longestRule {
+		longestRule = len 
+	}
+
+	return newRule
 }
 
 func (r rule) String() string {
@@ -29,5 +41,5 @@ func (r rule) Hash() int {
 }
 
 func (r rule) Equal(other rule) bool {
-	return r.nonTerm == other.nonTerm && utils.CompArrPtr(r.sententialForm, other.sententialForm)
+	return reflect.DeepEqual(r, other)
 }
