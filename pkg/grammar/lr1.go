@@ -9,7 +9,7 @@ import (
 
 type lr1AutomationState struct {
 	id             uint
-	augmentedRules *utils.Map[augmentedRule, struct{}]
+	augmentedRules map[simpleAugmentedRule]map[symbol]struct{} //augmented rule -> lookahead
 	transitions    map[symbol]*lr1AutomationState
 }
 
@@ -17,15 +17,17 @@ func newLR1AutomationState(id *uint) *lr1AutomationState {
 	*id++
 	return &lr1AutomationState{
 		id:             *id - 1,
-		augmentedRules: utils.NewMap[augmentedRule, struct{}](),
+		augmentedRules: make(map[simpleAugmentedRule]map[symbol]struct{}),
 		transitions:    make(map[symbol]*lr1AutomationState),
 	}
 }
 
 func (s *lr1AutomationState) String() string {
-	rules := make([]string,s.augmentedRules.Len())
-	for i, ar := range s.augmentedRules.GetAllKeys() {
-		rules[i] = ar.String()
+	rules := make([]string,len(s.augmentedRules))
+	i := 0
+	for ar, lookahead := range s.augmentedRules {
+		rules[i] = ar.StringWithLookahead(lookahead)
+		i++
 	}
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
 }

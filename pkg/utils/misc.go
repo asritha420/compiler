@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+type Set[T comparable] map[T]struct{}
+
 /*
 Quickly remove an element at index i from array s.
 *Note* There is no bounds checks and this will change the order of the array
