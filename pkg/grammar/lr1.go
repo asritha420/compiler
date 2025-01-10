@@ -9,7 +9,7 @@ import (
 
 type lr1AutomationState struct {
 	id             uint
-	augmentedRules map[simpleAugmentedRule]map[symbol]struct{} //augmented rule -> lookahead
+	augmentedRules map[simpleAugmentedRule]set[symbol] //augmented rule -> lookahead
 	transitions    map[symbol]*lr1AutomationState
 }
 
@@ -17,13 +17,13 @@ func newLR1AutomationState(id *uint) *lr1AutomationState {
 	*id++
 	return &lr1AutomationState{
 		id:             *id - 1,
-		augmentedRules: make(map[simpleAugmentedRule]map[symbol]struct{}),
+		augmentedRules: make(map[simpleAugmentedRule]set[symbol]),
 		transitions:    make(map[symbol]*lr1AutomationState),
 	}
 }
 
 func (s *lr1AutomationState) String() string {
-	rules := make([]string,len(s.augmentedRules))
+	rules := make([]string, len(s.augmentedRules))
 	i := 0
 	for ar, lookahead := range s.augmentedRules {
 		rules[i] = ar.StringWithLookahead(lookahead)
@@ -32,7 +32,7 @@ func (s *lr1AutomationState) String() string {
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
 }
 
-func (ar *augmentedRule) getClosureRecursion(g *grammar, closure *utils.Map[augmentedRule, struct{}]) {
+func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simpleAugmentedRule]set[symbol]) {
 	if _, ok := closure.Get(*ar); ok {
 		return
 	}
@@ -46,7 +46,7 @@ func (ar *augmentedRule) getClosureRecursion(g *grammar, closure *utils.Map[augm
 
 	// nextSymbol is a NT
 	newLookahead := make(map[symbol]struct{})
-	sentential := ar.rule.sententialForm[ar.position + 1:]
+	sentential := ar.rule.sententialForm[ar.position+1:]
 	first := g.generateFirstSet(sentential...)
 	utils.AddToMap(first, newLookahead)
 	if _, containsEpsilon := first[Epsilon]; containsEpsilon {
@@ -55,15 +55,14 @@ func (ar *augmentedRule) getClosureRecursion(g *grammar, closure *utils.Map[augm
 
 	delete(newLookahead, Epsilon)
 
-	
 	for _, r := range g.ruleNTMap[nextSymbol.name] {
 		newAR := NewAugmentedRule(r, 0, newLookahead)
 		newAR.getClosureRecursion(g, closure)
 	}
 }
 
-//TODO find a better way to do this?
-func getClosure(g *grammar, ars ...*augmentedRule) *utils.Map[augmentedRule,struct{}] {
+// TODO find a better way to do this?
+func getClosure(g *Grammar, ars ...*augmentedRule) *utils.Map[augmentedRule, struct{}] {
 	closure := utils.NewMap[augmentedRule, struct{}]()
 
 	for _, ar := range ars {
@@ -84,9 +83,9 @@ func getClosure(g *grammar, ars ...*augmentedRule) *utils.Map[augmentedRule,stru
 	return closure
 }
 
-func (g *grammar) getTransitions(ars *utils.Map[augmentedRule, struct{}]) map[symbol]*utils.Map[augmentedRule, struct{}] {
+func (g *Grammar) getTransitions(ars *utils.Map[augmentedRule, struct{}]) map[symbol]*utils.Map[augmentedRule, struct{}] {
 	transitions := make(map[symbol]*utils.Map[augmentedRule, struct{}])
-	
+
 	for _, ar := range ars.GetAllKeys() {
 		nextSymbol := ar.getNextSymbol()
 		if nextSymbol == nil {
@@ -111,7 +110,7 @@ func findState(target *utils.Map[augmentedRule, struct{}], states []*lr1Automati
 	return nil
 }
 
-func (g *grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
+func (g *Grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id)
@@ -159,5 +158,5 @@ func makeMermaid(states []*lr1AutomationState) string {
 
 // func convertLR1ToLALR(kernel *lr1AutomationState, states []*lr1AutomationState) (*lr1AutomationState, []*lr1AutomationState) {
 // 	idMap := make(map[uint]uint)
-// 	mergedStates := 
-// } 
+// 	mergedStates :=
+// }

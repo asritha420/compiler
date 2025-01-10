@@ -2,7 +2,7 @@ package grammar
 
 import "asritha.dev/compiler/pkg/utils"
 
-type grammar struct {
+type Grammar struct {
 	rules []*rule
 
 	ruleNTMap  map[string][]*rule
@@ -10,8 +10,8 @@ type grammar struct {
 	followSets map[string]map[symbol]struct{}
 }
 
-func NewGrammar(rules ...*rule) *grammar {
-	g := &grammar{
+func NewGrammar(rules ...*rule) *Grammar {
+	g := &Grammar{
 		rules:      rules,
 		firstSets:  make(map[string]map[symbol]struct{}),
 		followSets: make(map[string]map[symbol]struct{}),
@@ -25,7 +25,7 @@ func NewGrammar(rules ...*rule) *grammar {
 	return g
 }
 
-func (g *grammar) initializeSets() {
+func (g *Grammar) initializeSets() {
 	for _, r := range g.rules {
 		if _, ok := g.firstSets[r.nonTerm]; !ok {
 			g.firstSets[r.nonTerm] = make(map[symbol]struct{})
@@ -36,7 +36,7 @@ func (g *grammar) initializeSets() {
 	}
 }
 
-func (g *grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{} {
+func (g *Grammar) generateFirstSet(sententialForm ...*symbol) map[symbol]struct{} {
 	firstSet := make(map[symbol]struct{})
 	sententialFormIdx := 0
 sententialLoop:
@@ -70,7 +70,7 @@ sententialLoop:
 	return firstSet
 }
 
-func (g *grammar) generateFirstSets() {
+func (g *Grammar) generateFirstSets() {
 	changeMade := true
 	for changeMade {
 		changeMade = false
@@ -83,7 +83,7 @@ func (g *grammar) generateFirstSets() {
 	}
 }
 
-func (g *grammar) generateFollowSets() {
+func (g *Grammar) generateFollowSets() {
 	// add EOF to first rule
 	g.followSets[g.rules[0].nonTerm][EndOfInput] = struct{}{}
 
@@ -110,7 +110,6 @@ func (g *grammar) generateFollowSets() {
 	}
 }
 
-
 // func (g *grammar) canProduceEpsilon(sententialForm ...*symbol) bool {
 // 	for _, s := range sententialForm {
 // 		switch s.symbolType {
@@ -120,7 +119,7 @@ func (g *grammar) generateFollowSets() {
 // 			if _, containsEpsilon := g.firstSets[s.name][Epsilon]; !containsEpsilon {
 // 				return false
 // 			}
-// 		} 
+// 		}
 // 	}
 // 	return true
 // }
