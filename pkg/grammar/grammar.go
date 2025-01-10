@@ -60,7 +60,7 @@ sententialLoop:
 			break sententialLoop
 
 		case nonTerm:
-			utils.AddToMap(g.firstSets[symbol.name], firstSet)
+			utils.AddToMapIgnore(g.firstSets[symbol.name], firstSet, Epsilon)
 			if _, containsEpsilon := g.firstSets[symbol.name][Epsilon]; !containsEpsilon {
 				break sententialLoop
 			}
@@ -111,16 +111,16 @@ func (g *grammar) generateFollowSets() {
 }
 
 
-func (g *grammar) canProduceEpsilon(sententialForm ...*symbol) bool {
-	for _, s := range sententialForm {
-		switch s.symbolType {
-		case endOfInput, token:
-			return false
-		case nonTerm:
-			if _, containsEpsilon := g.firstSets[s.name][Epsilon]; !containsEpsilon {
-				return false
-			}
-		} 
-	}
-	return true
-}
+// func (g *grammar) canProduceEpsilon(sententialForm ...*symbol) bool {
+// 	for _, s := range sententialForm {
+// 		switch s.symbolType {
+// 		case endOfInput, token:
+// 			return false
+// 		case nonTerm:
+// 			if _, containsEpsilon := g.firstSets[s.name][Epsilon]; !containsEpsilon {
+// 				return false
+// 			}
+// 		} 
+// 	}
+// 	return true
+// }

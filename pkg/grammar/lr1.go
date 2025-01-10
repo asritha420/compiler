@@ -22,15 +22,6 @@ func newLR1AutomationState(id *uint) *lr1AutomationState {
 	}
 }
 
-func (s lr1AutomationState) Hash() int {
-	return s.augmentedRules.GetKeysHash()
-}
-
-// ONLY CHECKS IF RULES ARE THE SAME
-func (s lr1AutomationState) Equal(other lr1AutomationState) bool {
-	return s.augmentedRules.KeysEqual(*other.augmentedRules)
-}
-
 func (s *lr1AutomationState) String() string {
 	rules := make([]string,s.augmentedRules.Len())
 	for i, ar := range s.augmentedRules.GetAllKeys() {
@@ -39,7 +30,7 @@ func (s *lr1AutomationState) String() string {
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
 }
 
-func (g *grammar) getClosureRecursion(ar *augmentedRule, closure *utils.Map[augmentedRule, struct{}]) {
+func (ar *augmentedRule) getClosureRecursion(g *grammar, closure *utils.Map[augmentedRule, struct{}]) {
 	if _, ok := closure.Get(*ar); ok {
 		return
 	}
@@ -65,16 +56,16 @@ func (g *grammar) getClosureRecursion(ar *augmentedRule, closure *utils.Map[augm
 	
 	for _, r := range g.ruleNTMap[nextSymbol.name] {
 		newAR := NewAugmentedRule(r, 0, newLookahead)
-		g.getClosureRecursion(newAR, closure)
+		newAR.getClosureRecursion(g, closure)
 	}
 }
 
 //TODO find a better way to do this?
-func (g *grammar) getClosure(ars ...*augmentedRule) *utils.Map[augmentedRule,struct{}] {
+func getClosure(g *grammar, ars ...*augmentedRule) *utils.Map[augmentedRule,struct{}] {
 	closure := utils.NewMap[augmentedRule, struct{}]()
 
 	for _, ar := range ars {
-		g.getClosureRecursion(ar, closure)
+		ar.getClosureRecursion(g, closure)
 	}
 
 	// mergedClosure := utils.NewMap[augmentedRule, struct{}]()
@@ -103,7 +94,7 @@ func (g *grammar) getTransitions(ars *utils.Map[augmentedRule, struct{}]) map[sy
 		if _, ok := transitions[*nextSymbol]; !ok {
 			transitions[*nextSymbol] = utils.NewMap[augmentedRule, struct{}]()
 		}
-		closure := g.getClosure(ar.shiftedCopy())
+		closure := getClosure(g, ar.shiftedCopy())
 		transitions[*nextSymbol].PutAll(closure.GetAll())
 	}
 	return transitions
@@ -123,7 +114,7 @@ func (g *grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
 
 	kernel := newLR1AutomationState(&id)
 	startRule := NewAugmentedRule(g.rules[0], 0, map[symbol]struct{}{EndOfInput: {}})
-	kernel.augmentedRules = g.getClosure(startRule)
+	kernel.augmentedRules = getClosure(g, startRule)
 
 	states := []*lr1AutomationState{kernel}
 	openList := []*lr1AutomationState{kernel}
