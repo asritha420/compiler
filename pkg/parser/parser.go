@@ -12,4 +12,7 @@ type SLRParser struct {
 
 }
 
-func NewSLRParser(* )
+func NewSLRParser(* ) { 
+
+	
+}

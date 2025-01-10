@@ -25,7 +25,7 @@ func (ar simpleAugmentedRule) String() string {
 	return rule
 }
 
-func (ar simpleAugmentedRule) StringWithLookahead(lookahead map[symbol]struct{}) string {
+func (ar simpleAugmentedRule) StringWithLookahead(lookahead Set[symbol]) string {
 	rule := ar.rule.nonTerm + "="
 	for i, s := range ar.rule.sententialForm {
 		if ar.position == i {
