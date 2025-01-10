@@ -3,18 +3,18 @@ package grammar
 import "asritha.dev/compiler/pkg/utils"
 
 type Grammar struct {
-	rules []*rule
+	Rules []*rule
 
 	ruleNTMap  map[string][]*rule
-	firstSets  map[string]map[symbol]struct{}
-	followSets map[string]map[symbol]struct{}
+	FirstSets  map[string]map[symbol]struct{}
+	FollowSets map[string]map[symbol]struct{}
 }
 
 func NewGrammar(rules ...*rule) *Grammar {
 	g := &Grammar{
-		rules:      rules,
-		firstSets:  make(map[string]map[symbol]struct{}),
-		followSets: make(map[string]map[symbol]struct{}),
+		Rules:      rules,
+		FirstSets:  make(map[string]map[symbol]struct{}),
+		FollowSets: make(map[string]map[symbol]struct{}),
 		ruleNTMap:  make(map[string][]*rule),
 	}
 
@@ -26,10 +26,10 @@ func NewGrammar(rules ...*rule) *Grammar {
 }
 
 func (g *Grammar) initializeSets() {
-	for _, r := range g.rules {
-		if _, ok := g.firstSets[r.nonTerm]; !ok {
-			g.firstSets[r.nonTerm] = make(map[symbol]struct{})
-			g.followSets[r.nonTerm] = make(map[symbol]struct{})
+	for _, r := range g.Rules {
+		if _, ok := g.FirstSets[r.nonTerm]; !ok {
+			g.FirstSets[r.nonTerm] = make(map[symbol]struct{})
+			g.FollowSets[r.nonTerm] = make(map[symbol]struct{})
 			g.ruleNTMap[r.nonTerm] = make([]*rule, 0)
 		}
 		g.ruleNTMap[r.nonTerm] = append(g.ruleNTMap[r.nonTerm], r)
@@ -60,8 +60,8 @@ sententialLoop:
 			break sententialLoop
 
 		case nonTerm:
-			utils.AddToMapIgnore(g.firstSets[symbol.name], firstSet, Epsilon)
-			if _, containsEpsilon := g.firstSets[symbol.name][Epsilon]; !containsEpsilon {
+			utils.AddToMapIgnore(g.FirstSets[symbol.name], firstSet, Epsilon)
+			if _, containsEpsilon := g.FirstSets[symbol.name][Epsilon]; !containsEpsilon {
 				break sententialLoop
 			}
 			sententialFormIdx++
@@ -74,9 +74,9 @@ func (g *Grammar) generateFirstSets() {
 	changeMade := true
 	for changeMade {
 		changeMade = false
-		for _, rule := range g.rules {
+		for _, rule := range g.Rules {
 			newFirstSet := g.generateFirstSet(rule.sententialForm...)
-			if utils.AddToMap(newFirstSet, g.firstSets[rule.nonTerm]) != 0 {
+			if utils.AddToMap(newFirstSet, g.FirstSets[rule.nonTerm]) != 0 {
 				changeMade = true
 			}
 		}
@@ -85,12 +85,12 @@ func (g *Grammar) generateFirstSets() {
 
 func (g *Grammar) generateFollowSets() {
 	// add EOF to first rule
-	g.followSets[g.rules[0].nonTerm][EndOfInput] = struct{}{}
+	g.FollowSets[g.Rules[0].nonTerm][EndOfInput] = struct{}{}
 
 	changeMade := true
 	for changeMade {
 		changeMade = false
-		for _, rule := range g.rules {
+		for _, rule := range g.Rules {
 			for i, s := range rule.sententialForm {
 				if s.symbolType != nonTerm {
 					continue
@@ -99,10 +99,10 @@ func (g *Grammar) generateFollowSets() {
 				firstSet := g.generateFirstSet(rule.sententialForm[i+1:]...)
 				_, containsEpsilon := firstSet[Epsilon]
 				delete(firstSet, Epsilon)
-				if utils.AddToMap(firstSet, g.followSets[s.name]) != 0 {
+				if utils.AddToMap(firstSet, g.FollowSets[s.name]) != 0 {
 					changeMade = true
 				}
-				if containsEpsilon && utils.AddToMap(g.followSets[rule.nonTerm], g.followSets[s.name]) != 0 {
+				if containsEpsilon && utils.AddToMap(g.FollowSets[rule.nonTerm], g.FollowSets[s.name]) != 0 {
 					changeMade = true
 				}
 			}

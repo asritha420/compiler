@@ -114,7 +114,7 @@ func (g *Grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id)
-	startRule := NewAugmentedRule(g.rules[0], 0, map[symbol]struct{}{EndOfInput: {}})
+	startRule := NewAugmentedRule(g.Rules[0], 0, map[symbol]struct{}{EndOfInput: {}})
 	kernel.augmentedRules = getClosure(g, startRule)
 
 	states := []*lr1AutomationState{kernel}

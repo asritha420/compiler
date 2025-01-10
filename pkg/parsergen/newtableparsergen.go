@@ -1,5 +1,0 @@
-package parsergen
-
-func NewTableParserGen() {
-
-}
