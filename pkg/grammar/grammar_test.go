@@ -60,3 +60,8 @@ func TestLALR(t *testing.T) {
 	_, states := generateLALR(g)
 	print(makeMermaid(states))
 }
+
+func TestParser(t *testing.T) {
+	p := NewParser(setupGrammar(), true)
+	print(p)
+}
