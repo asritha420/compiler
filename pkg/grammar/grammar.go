@@ -87,7 +87,7 @@ func (g *Grammar) generateFirstSets() {
 
 func (g *Grammar) generateFollowSets() {
 	// add EOF to first rule
-	g.FollowSets[g.Rules[0].NonTerm][EndOfInput] = struct{}{}
+	g.FollowSets[g.firstRule.NonTerm][EndOfInput] = struct{}{}
 
 	changeMade := true
 	for changeMade {

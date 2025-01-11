@@ -91,8 +91,8 @@ type inputSymbol struct {
 }
 
 type parseTreeNode struct {
-	name     string
-	data     string
+	symbol
+	literal string
 	children []*parseTreeNode
 }
 
