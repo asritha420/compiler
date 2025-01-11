@@ -63,14 +63,13 @@ func TestLALR(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	p := NewParser(setupGrammar(), true)
-	input := []inputSymbol{
-		{symbol: *NewToken("id")},
-		{symbol: *NewToken("(")},
-		{symbol: *NewToken("id")},
-		{symbol: *NewToken("+")},
-		{symbol: *NewToken("id")},
-		{symbol: *NewToken(")")},
-		{symbol: EndOfInput},
+	input := []Token{
+		{name: "id"},
+		{name: "("},
+		{name: "id"},
+		{name: "+"},
+		{name: "id"},
+		{name: ")"},
 	}
 	tree, _ := p.Parse(input)
 	print(tree)

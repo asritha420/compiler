@@ -80,70 +80,76 @@ func (p parser) makeTables() {
 			if nextSymbol.symbolType == nonTerm {
 				p.gotoTable[s][nextSymbol.name] = s.transitions[*nextSymbol]
 			}
+
+			// other symbol types should not appear but if they do don't do anything
 		}
 	}
 }
 
-// TODO may not need symbol type
-type inputSymbol struct {
-	symbol
-	literal string
+type parseTreeNode interface{}
+
+type parseTreeNonTerm struct {
+	name     string
+	children []parseTreeNode
 }
 
-type parseTreeNode struct {
-	symbol
-	literal string
-	children []*parseTreeNode
-}
-
-func newParseTreeNode(name string, data string, children []*parseTreeNode) *parseTreeNode {
-	return &parseTreeNode{
+func newParseTreeNonTerm(name string, children []parseTreeNode) *parseTreeNonTerm {
+	return &parseTreeNonTerm{
 		name:     name,
-		data:     data,
 		children: children,
 	}
 }
 
-func (p parser) Parse(input []inputSymbol) (*parseTreeNode, error) {
+type Token struct {
+	name    string
+	literal string
+}
+
+func (p parser) Parse(input []Token) (parseTreeNode, error) {
 	stack := []*lrAutomationState{p.kernel}
-	treeStack := make([]*parseTreeNode, 0)
+	treeStack := make([]parseTreeNode, 0)
 
 	for {
-		s := stack[len(stack)-1] //top of stack
-		a := input[0]            // first input
+		stackTop := stack[len(stack)-1] //top of stack
+		var firstInput Token // first input
+		var firstInputSymbol symbol             // first input as symbol (may be EndOfInput)
+		if len(input) == 0 {
+			firstInputSymbol = EndOfInput
+		} else {
+			firstInput := input[0]
+			firstInputSymbol = *NewToken(firstInput.name)
+		}
 
-		nextAction, ok := p.actionTable[s][a.symbol]
+		nextAction, ok := p.actionTable[stackTop][firstInputSymbol]
 		if !ok {
 			return nil, fmt.Errorf("unexpected input")
 		}
 
 		if nextAction.accept {
-			println("Complete!")
-			root := newParseTreeNode(p.firstRule.NonTerm, p.firstRule.String(), treeStack)
+			// accept
+			root := newParseTreeNonTerm(p.firstRule.NonTerm, treeStack)
 			return root, nil
 		}
 
 		if nextAction.shift != nil {
-			fmt.Printf("Shift %d\n", nextAction.shift.id)
+			// shift
 			stack = append(stack, nextAction.shift)
-			treeStack = append(treeStack, newParseTreeNode(a.name, a.literal, nil))
+			treeStack = append(treeStack, firstInput)
 			input = input[1:]
 			continue
 		}
 
-		fmt.Printf("Reduce %s\n", nextAction.reduce.String())
-
-		//Pop states corresponding to β from the stack
+		// reduce
 		ruleLen := len(nextAction.reduce.sententialForm)
-		newStackIdx := len(stack) - ruleLen
-		newTreeStackIdx := len(treeStack) - ruleLen
+		newStackLen := len(stack) - ruleLen
+		newTreeStackLen := len(treeStack) - ruleLen
 
-		newNode := newParseTreeNode(nextAction.reduce.NonTerm, nextAction.reduce.String(), slices.Clone(treeStack[newTreeStackIdx:]))
+		newNode := newParseTreeNonTerm(nextAction.reduce.NonTerm, slices.Clone(treeStack[newTreeStackLen:]))
 
-		treeStack = treeStack[0:newTreeStackIdx]
+		treeStack = treeStack[0:newTreeStackLen]
 		treeStack = append(treeStack, newNode)
 
-		stack = stack[0:newStackIdx]
-		stack = append(stack, p.gotoTable[stack[newStackIdx-1]][nextAction.reduce.NonTerm])
+		stack = stack[0:newStackLen]
+		stack = append(stack, p.gotoTable[stack[newStackLen-1]][nextAction.reduce.NonTerm])
 	}
 }
