@@ -86,28 +86,34 @@ func (p parser) makeTables() {
 	}
 }
 
-type parseTreeNode interface{}
-
-type parseTreeNonTerm struct {
-	name     string
-	children []parseTreeNode
-}
-
-func newParseTreeNonTerm(name string, children []parseTreeNode) *parseTreeNonTerm {
-	return &parseTreeNonTerm{
-		name:     name,
-		children: children,
-	}
-}
-
 type Token struct {
 	name    string
 	literal string
 }
 
-func (p parser) Parse(input []Token) (parseTreeNode, error) {
+type parseTreeNode struct {
+	name    string
+	literal string
+	children []*parseTreeNode
+}
+
+func newParseTreeNonTerm(name string, children []*parseTreeNode) *parseTreeNode {
+	return &parseTreeNode{
+		name:     name,
+		children: children,
+	}
+}
+
+func newParseTreeToken(t Token) *parseTreeNode {
+	return &parseTreeNode{
+		name: t.name,
+		literal: t.literal,
+	}
+}
+
+func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 	stack := []*lrAutomationState{p.kernel}
-	treeStack := make([]parseTreeNode, 0)
+	treeStack := make([]*parseTreeNode, 0)
 
 	for {
 		stackTop := stack[len(stack)-1] //top of stack
@@ -116,7 +122,7 @@ func (p parser) Parse(input []Token) (parseTreeNode, error) {
 		if len(input) == 0 {
 			firstInputSymbol = EndOfInput
 		} else {
-			firstInput := input[0]
+			firstInput = input[0]
 			firstInputSymbol = *NewToken(firstInput.name)
 		}
 
@@ -134,7 +140,7 @@ func (p parser) Parse(input []Token) (parseTreeNode, error) {
 		if nextAction.shift != nil {
 			// shift
 			stack = append(stack, nextAction.shift)
-			treeStack = append(treeStack, firstInput)
+			treeStack = append(treeStack, newParseTreeToken(firstInput))
 			input = input[1:]
 			continue
 		}
