@@ -6,15 +6,15 @@ type Grammar struct {
 	rules []*rule
 
 	ruleNTMap  map[string][]*rule
-	firstSets  map[string]map[symbol]struct{}
-	followSets map[string]map[symbol]struct{}
+	firstSets  map[string]set[symbol]
+	followSets map[string]set[symbol]
 }
 
 func NewGrammar(rules ...*rule) *Grammar {
 	g := &Grammar{
 		rules:      rules,
-		firstSets:  make(map[string]map[symbol]struct{}),
-		followSets: make(map[string]map[symbol]struct{}),
+		firstSets:  make(map[string]set[symbol]),
+		followSets: make(map[string]set[symbol]),
 		ruleNTMap:  make(map[string][]*rule),
 	}
 

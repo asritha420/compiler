@@ -33,12 +33,6 @@ func (s *lr1AutomationState) String() string {
 }
 
 func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simpleAugmentedRule]set[symbol]) {
-	if _, ok := closure.Get(*ar); ok {
-		return
-	}
-
-	closure.Put(*ar, struct{}{})
-
 	nextSymbol := ar.getNextSymbol()
 	if nextSymbol == nil || nextSymbol.symbolType != nonTerm {
 		return
@@ -50,7 +44,7 @@ func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simple
 	first := g.generateFirstSet(sentential...)
 	utils.AddToMap(first, newLookahead)
 	if _, containsEpsilon := first[Epsilon]; containsEpsilon {
-		utils.AddToMap(ar.lookahead, newLookahead)
+		utils.AddToMap(closure[ar], newLookahead)
 	}
 
 	delete(newLookahead, Epsilon)
