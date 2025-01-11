@@ -1,19 +1,18 @@
 package grammar
 
-type inputSymbol struct {
-	symbol
-	literal string
-}
+import (
+	"fmt"
+)
+
+var (
+	accept = action{accept: true}
+)
 
 type action struct {
 	shift *lrAutomationState
 	reduce *rule
 	accept bool
 }
-
-var (
-	accept = action{accept: true}
-)
 
 func newReduce(r *rule) action {
 	return action{reduce: r}
@@ -40,7 +39,6 @@ func NewParser(g *Grammar, useLALR bool) *parser {
 	} else {
 		kernel, states = generateLR1(g)
 	}
-	print(makeMermaid(states))
 	p := &parser{
 		Grammar: g,
 		useLALR: useLALR,
@@ -85,9 +83,36 @@ func (p parser) makeTables() {
 	}
 }
 
-// func (p parser) Parse(input []inputSymbol) {
-// 	stack := []*lrAutomationState{p.kernel}
-// 	for {
+type inputSymbol struct {
+	symbol
+	literal string
+}
 
-// 	}
-// }
+func (p parser) Parse(input []inputSymbol) error {
+	stack := []*lrAutomationState{p.kernel}
+
+	for {
+		nextAction, ok := p.actionTable[stack[len(stack)-1]][input[0].symbol]
+		if !ok {
+			return fmt.Errorf("unexpected input")
+		}
+
+		if nextAction.accept {
+			println("Complete!")
+			return nil
+		}
+
+		if nextAction.shift != nil {
+			fmt.Printf("shift %d\n", nextAction.shift.id)
+			stack = append(stack, nextAction.shift)
+			input = input[1:]
+			continue
+		}
+
+		fmt.Printf("reduce %s\n", nextAction.reduce.String())
+
+		//Pop states corresponding to β from the stack
+		stack = stack[0:len(stack) - len(nextAction.reduce.sententialForm)]
+		stack = append(stack, p.gotoTable[stack[len(stack)-1]][*NewNonTerm(nextAction.reduce.NonTerm)])
+	}
+}

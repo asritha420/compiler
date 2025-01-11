@@ -63,5 +63,14 @@ func TestLALR(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	p := NewParser(setupGrammar(), true)
-	print(p)
+	input := []inputSymbol{
+		{symbol: *NewToken("id")},
+		{symbol: *NewToken("(")},
+		{symbol: *NewToken("id")},
+		{symbol: *NewToken("+")},
+		{symbol: *NewToken("id")},
+		{symbol: *NewToken(")")},
+		{symbol: EndOfInput},
+	}
+	p.Parse(input)
 }
