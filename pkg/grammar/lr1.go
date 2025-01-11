@@ -2,23 +2,26 @@ package grammar
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"strings"
 
 	"asritha.dev/compiler/pkg/utils"
 )
 
+type arLookaheadMap map[augmentedRule]set[symbol] //augmented rule -> lookahead
+
 type lr1AutomationState struct {
 	id             uint
-	augmentedRules map[simpleAugmentedRule]set[symbol] //augmented rule -> lookahead
+	augmentedRules arLookaheadMap
 	transitions    map[symbol]*lr1AutomationState
 }
 
-func newLR1AutomationState(id *uint) *lr1AutomationState {
+func newLR1AutomationState(id *uint, augmentedRules arLookaheadMap) *lr1AutomationState {
 	*id++
 	return &lr1AutomationState{
 		id:             *id - 1,
-		augmentedRules: make(map[simpleAugmentedRule]set[symbol]),
+		augmentedRules: augmentedRules,
 		transitions:    make(map[symbol]*lr1AutomationState),
 	}
 }
@@ -33,7 +36,7 @@ func (s *lr1AutomationState) String() string {
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
 }
 
-func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simpleAugmentedRule]set[symbol]) {
+func (ar augmentedRule) getClosureRecursion(g *Grammar, closure arLookaheadMap) {
 	nextSymbol := ar.getNextSymbol()
 	if nextSymbol == nil || nextSymbol.symbolType != nonTerm {
 		return
@@ -41,15 +44,13 @@ func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simple
 
 	sentential := ar.rule.sententialForm[ar.position+1:]
 	newLookahead := g.generateFirstSet(sentential...)
-
 	if _, ok := newLookahead[Epsilon]; ok {
-		utils.AddToMap(closure[ar], newLookahead)
+		utils.AddToMap(closure[ar], newLookahead) //add lookahead of current ar if it can be finished with epsilon
 	}
-
 	delete(newLookahead, Epsilon)
 
 	for _, rule := range g.ruleNTMap[nextSymbol.name] {
-		newAR := *NewSimpleAugmentedRule(rule, 0)
+		newAR := *NewAugmentedRule(rule, 0)
 		if _, ARExists := closure[newAR]; ARExists {
 			utils.AddToMap(newLookahead, closure[newAR])
 		} else {
@@ -59,14 +60,14 @@ func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simple
 	}
 }
 
-func getClosure(g *Grammar, initialClosure map[simpleAugmentedRule]set[symbol]) {
-	for ar := range initialClosure {
-		ar.getClosureRecursion(g, initialClosure)
+func getClosure(g *Grammar, initial arLookaheadMap) {
+	for ar := range initial {
+		ar.getClosureRecursion(g, initial)
 	}
 }
 
-func (g *Grammar) getTransitions(core map[simpleAugmentedRule]set[symbol]) map[symbol]map[simpleAugmentedRule]set[symbol] {
-	transitions := make(map[symbol]map[simpleAugmentedRule]set[symbol])
+func getTransitions(g *Grammar, core arLookaheadMap) map[symbol]arLookaheadMap {
+	transitions := make(map[symbol]arLookaheadMap)
 
 	for ar, lookahead := range core {
 		nextSymbol := ar.getNextSymbol()
@@ -75,22 +76,20 @@ func (g *Grammar) getTransitions(core map[simpleAugmentedRule]set[symbol]) map[s
 		}
 
 		if _, ok := transitions[*nextSymbol]; !ok {
-			transitions[*nextSymbol] = make(map[simpleAugmentedRule]set[symbol])
+			transitions[*nextSymbol] = make(arLookaheadMap)
 		}
 
-		newAR := *NewSimpleAugmentedRule(ar.rule, ar.position+1)
-		//TODO may be redundant??
-		if _, ok := transitions[*nextSymbol][newAR]; !ok {
-			transitions[*nextSymbol][newAR] = make(set[symbol])
-		}
+		newAR := *NewAugmentedRule(ar.rule, ar.position+1)
+		//if transitions are not make correctly it may be HERE
+		//removed check for if transitions[*nextSymbol][newAR] was already set because it seemed redundant
+		transitions[*nextSymbol][newAR] = maps.Clone(lookahead)
 
-		utils.AddToMap(lookahead, transitions[*nextSymbol][newAR])
 		getClosure(g, transitions[*nextSymbol])
 	}
 	return transitions
 }
 
-func findState(target map[simpleAugmentedRule]set[symbol], states []*lr1AutomationState) *lr1AutomationState {
+func findState(target arLookaheadMap, states []*lr1AutomationState) *lr1AutomationState {
 	for _, state := range states {
 		if reflect.DeepEqual(target, state.augmentedRules) {
 			return state
@@ -99,13 +98,12 @@ func findState(target map[simpleAugmentedRule]set[symbol], states []*lr1Automati
 	return nil
 }
 
-func (g *Grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
+func generateLR1(g *Grammar) (*lr1AutomationState, []*lr1AutomationState) {
 	var id uint = 0
 
-	kernel := newLR1AutomationState(&id)
-	kernel.augmentedRules = map[simpleAugmentedRule]set[symbol]{
-		*NewSimpleAugmentedRule(g.Rules[0], 0): {EndOfInput:struct{}{}},
-	}
+	kernel := newLR1AutomationState(&id, arLookaheadMap{
+		*NewAugmentedRule(g.Rules[0], 0): {EndOfInput: struct{}{}},
+	})
 	getClosure(g, kernel.augmentedRules)
 
 	states := []*lr1AutomationState{kernel}
@@ -115,14 +113,67 @@ func (g *Grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
 		state := openList[0]
 		openList = openList[1:]
 
-		for transition, rules := range g.getTransitions(state.augmentedRules) {
+		for transition, rules := range getTransitions(g, state.augmentedRules) {
 			if transitionState := findState(rules, states); transitionState != nil {
 				state.transitions[transition] = transitionState
 				continue
 			}
 
-			newState := newLR1AutomationState(&id)
-			newState.augmentedRules = rules
+			newState := newLR1AutomationState(&id, rules)
+			state.transitions[transition] = newState
+			states = append(states, newState)
+			openList = append(openList, newState)
+		}
+	}
+
+	return kernel, states
+}
+
+func findStateCore(target arLookaheadMap, states []*lr1AutomationState) *lr1AutomationState {
+	for _, state := range states {
+		if  utils.HasSameKeys(target, state.augmentedRules) {
+			return state
+		}
+	}
+	return nil
+}
+
+/*
+Basically LR1 but merges states that have the same core (same augmented rules not including lookahead)
+*/
+func generateLALR(g *Grammar) (*lr1AutomationState, []*lr1AutomationState) {
+	var id uint = 0
+
+	kernel := newLR1AutomationState(&id, arLookaheadMap{
+		*NewAugmentedRule(g.Rules[0], 0): {EndOfInput: struct{}{}},
+	})
+	getClosure(g, kernel.augmentedRules)
+
+	states := []*lr1AutomationState{kernel}
+	openList := []*lr1AutomationState{kernel}
+
+	for len(openList) > 0 {
+		state := openList[0]
+		openList = openList[1:]
+
+		for transition, rules := range getTransitions(g, state.augmentedRules) {
+			if transitionState := findStateCore(rules, states); transitionState != nil {
+				added := false
+				for ar, lookahead := range transitionState.augmentedRules {
+					if utils.AddToMap(rules[ar], lookahead) != 0 {
+						added = true
+					}
+				}
+				state.transitions[transition] = transitionState
+				
+				if added {
+					openList = append(openList, transitionState)
+				}
+				
+				continue
+			}
+
+			newState := newLR1AutomationState(&id, rules)
 			state.transitions[transition] = newState
 			states = append(states, newState)
 			openList = append(openList, newState)
@@ -146,8 +197,3 @@ func makeMermaid(states []*lr1AutomationState) string {
 	}
 	return mermaid
 }
-
-// func convertLR1ToLALR(kernel *lr1AutomationState, states []*lr1AutomationState) (*lr1AutomationState, []*lr1AutomationState) {
-// 	idMap := make(map[uint]uint)
-// 	mergedStates :=
-// }

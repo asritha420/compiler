@@ -109,17 +109,3 @@ func (g *Grammar) generateFollowSets() {
 		}
 	}
 }
-
-// func (g *grammar) canProduceEpsilon(sententialForm ...*symbol) bool {
-// 	for _, s := range sententialForm {
-// 		switch s.symbolType {
-// 		case endOfInput, token:
-// 			return false
-// 		case nonTerm:
-// 			if _, containsEpsilon := g.firstSets[s.name][Epsilon]; !containsEpsilon {
-// 				return false
-// 			}
-// 		}
-// 	}
-// 	return true
-// }

@@ -30,7 +30,7 @@ func TestFirstFollow(t *testing.T) {
 	println(g)
 }
 
-func TestLR1(t *testing.T) {
+func setupGrammar() *Grammar {
 	E := NewNonTerm("E")
 	T := NewNonTerm("T")
 
@@ -45,14 +45,18 @@ func TestLR1(t *testing.T) {
 	r4 := NewRule("T", id, lParen, E, rParen)
 	r5 := NewRule("T", id)
 
-	g := NewGrammar(r1, r2, r3, r4, r5)
-	// _, states := g.generateLR1()
-	// print(makeMermaid(states))
+	return NewGrammar(r1, r2, r3, r4, r5)
+}
 
-	state := map[simpleAugmentedRule]set[symbol] {
-		*NewSimpleAugmentedRule(r1, 0): {EndOfInput:struct{}{}},
-	}
-	getClosure(g, state)
-	_, states := g.generateLR1()
+func TestLR1(t *testing.T) {
+	g := setupGrammar()
+	_, states := generateLR1(g)
+	print(makeMermaid(states))
+}
+
+func TestLALR(t *testing.T) {
+	
+	g := setupGrammar()
+	_, states := generateLALR(g)
 	print(makeMermaid(states))
 }

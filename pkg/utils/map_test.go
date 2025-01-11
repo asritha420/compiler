@@ -134,25 +134,3 @@ func TestLoadFactor(t *testing.T) {
 	AssertEqual(t, "m.len", 65, m.len)
 	AssertEqual(t, "len(m.backing)", 256, len(m.backing))
 }
-
-func TestMap_findPair(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		key  K
-		want **mapItem[K, V]
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var m Map[K, V]
-			got := m.findPair(tt.key)
-			// TODO: update the condition below to compare got with tt.want.
-			if true {
-				t.Errorf("findPair() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
