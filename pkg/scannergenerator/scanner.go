@@ -1,7 +1,6 @@
 package scannergenerator
 
 import (
-	//"asritha.dev/compiler/pkg/scannergenerator/internal/regex"
 	"asritha.dev/compiler/pkg/scannergenerator/internal/regex"
 	"fmt"
 	"regexp"
