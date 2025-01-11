@@ -72,5 +72,6 @@ func TestParser(t *testing.T) {
 		{symbol: *NewToken(")")},
 		{symbol: EndOfInput},
 	}
-	p.Parse(input)
+	tree, _ := p.Parse(input)
+	print(tree)
 }

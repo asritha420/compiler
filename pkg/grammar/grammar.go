@@ -5,6 +5,7 @@ import "asritha.dev/compiler/pkg/utils"
 type Grammar struct {
 	Rules []*rule
 
+	firstRule *rule
 	ruleNTMap  map[string][]*rule
 	FirstSets  map[string]set[symbol]
 	FollowSets map[string]set[symbol]
@@ -13,6 +14,7 @@ type Grammar struct {
 func NewGrammar(rules ...*rule) *Grammar {
 	g := &Grammar{
 		Rules:      rules,
+		firstRule: rules[0],
 		FirstSets:  make(map[string]set[symbol]),
 		FollowSets: make(map[string]set[symbol]),
 		ruleNTMap:  make(map[string][]*rule),

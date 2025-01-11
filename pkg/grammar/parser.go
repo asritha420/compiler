@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"fmt"
+	"slices"
 )
 
 var (
@@ -9,7 +10,7 @@ var (
 )
 
 type action struct {
-	shift *lrAutomationState
+	shift  *lrAutomationState
 	reduce *rule
 	accept bool
 }
@@ -24,10 +25,10 @@ func newShift(s *lrAutomationState) action {
 
 type parser struct {
 	*Grammar
-	useLALR bool
-	kernel *lrAutomationState
-	states []*lrAutomationState
-	gotoTable map[*lrAutomationState]map[symbol]*lrAutomationState
+	useLALR     bool
+	kernel      *lrAutomationState
+	states      []*lrAutomationState
+	gotoTable   map[*lrAutomationState]map[string]*lrAutomationState
 	actionTable map[*lrAutomationState]map[symbol]action
 }
 
@@ -40,11 +41,11 @@ func NewParser(g *Grammar, useLALR bool) *parser {
 		kernel, states = generateLR1(g)
 	}
 	p := &parser{
-		Grammar: g,
-		useLALR: useLALR,
-		kernel: kernel,
-		states: states,
-		gotoTable: make(map[*lrAutomationState]map[symbol]*lrAutomationState),
+		Grammar:     g,
+		useLALR:     useLALR,
+		kernel:      kernel,
+		states:      states,
+		gotoTable:   make(map[*lrAutomationState]map[string]*lrAutomationState),
 		actionTable: make(map[*lrAutomationState]map[symbol]action),
 	}
 	p.makeTables()
@@ -56,7 +57,7 @@ func (p parser) makeTables() {
 	endAR := *NewAugmentedRule(p.Grammar.Rules[0], len(p.Grammar.Rules[0].sententialForm))
 
 	for _, s := range p.states {
-		p.gotoTable[s] = make(map[symbol]*lrAutomationState)
+		p.gotoTable[s] = make(map[string]*lrAutomationState)
 		p.actionTable[s] = make(map[symbol]action)
 
 		for ar, lookahead := range s.arLookaheadMap {
@@ -77,42 +78,72 @@ func (p parser) makeTables() {
 			}
 
 			if nextSymbol.symbolType == nonTerm {
-				p.gotoTable[s][*nextSymbol] = s.transitions[*nextSymbol]
+				p.gotoTable[s][nextSymbol.name] = s.transitions[*nextSymbol]
 			}
 		}
 	}
 }
 
+// TODO may not need symbol type
 type inputSymbol struct {
 	symbol
 	literal string
 }
 
-func (p parser) Parse(input []inputSymbol) error {
+type parseTreeNode struct {
+	name     string
+	data     string
+	children []*parseTreeNode
+}
+
+func newParseTreeNode(name string, data string, children []*parseTreeNode) *parseTreeNode {
+	return &parseTreeNode{
+		name:     name,
+		data:     data,
+		children: children,
+	}
+}
+
+func (p parser) Parse(input []inputSymbol) (*parseTreeNode, error) {
 	stack := []*lrAutomationState{p.kernel}
+	treeStack := make([]*parseTreeNode, 0)
 
 	for {
-		nextAction, ok := p.actionTable[stack[len(stack)-1]][input[0].symbol]
+		s := stack[len(stack)-1] //top of stack
+		a := input[0]            // first input
+
+		nextAction, ok := p.actionTable[s][a.symbol]
 		if !ok {
-			return fmt.Errorf("unexpected input")
+			return nil, fmt.Errorf("unexpected input")
 		}
 
 		if nextAction.accept {
 			println("Complete!")
-			return nil
+			root := newParseTreeNode(p.firstRule.NonTerm, p.firstRule.String(), treeStack)
+			return root, nil
 		}
 
 		if nextAction.shift != nil {
-			fmt.Printf("shift %d\n", nextAction.shift.id)
+			fmt.Printf("Shift %d\n", nextAction.shift.id)
 			stack = append(stack, nextAction.shift)
+			treeStack = append(treeStack, newParseTreeNode(a.name, a.literal, nil))
 			input = input[1:]
 			continue
 		}
 
-		fmt.Printf("reduce %s\n", nextAction.reduce.String())
+		fmt.Printf("Reduce %s\n", nextAction.reduce.String())
 
 		//Pop states corresponding to β from the stack
-		stack = stack[0:len(stack) - len(nextAction.reduce.sententialForm)]
-		stack = append(stack, p.gotoTable[stack[len(stack)-1]][*NewNonTerm(nextAction.reduce.NonTerm)])
+		ruleLen := len(nextAction.reduce.sententialForm)
+		newStackIdx := len(stack) - ruleLen
+		newTreeStackIdx := len(treeStack) - ruleLen
+
+		newNode := newParseTreeNode(nextAction.reduce.NonTerm, nextAction.reduce.String(), slices.Clone(treeStack[newTreeStackIdx:]))
+
+		treeStack = treeStack[0:newTreeStackIdx]
+		treeStack = append(treeStack, newNode)
+
+		stack = stack[0:newStackIdx]
+		stack = append(stack, p.gotoTable[stack[newStackIdx-1]][nextAction.reduce.NonTerm])
 	}
 }
