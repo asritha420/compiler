@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"asritha.dev/compiler/pkg/utils"
@@ -38,66 +39,60 @@ func (ar simpleAugmentedRule) getClosureRecursion(g *Grammar, closure map[simple
 		return
 	}
 
-	// nextSymbol is a NT
-	newLookahead := make(map[symbol]struct{})
 	sentential := ar.rule.sententialForm[ar.position+1:]
-	first := g.generateFirstSet(sentential...)
-	utils.AddToMap(first, newLookahead)
-	if _, containsEpsilon := first[Epsilon]; containsEpsilon {
+	newLookahead := g.generateFirstSet(sentential...)
+
+	if _, ok := newLookahead[Epsilon]; ok {
 		utils.AddToMap(closure[ar], newLookahead)
 	}
 
 	delete(newLookahead, Epsilon)
 
-	for _, r := range g.ruleNTMap[nextSymbol.name] {
-		newAR := NewAugmentedRule(r, 0, newLookahead)
-		newAR.getClosureRecursion(g, closure)
-	}
-}
-
-// TODO find a better way to do this?
-func getClosure(g *Grammar, ars ...*augmentedRule) *utils.Map[augmentedRule, struct{}] {
-	closure := utils.NewMap[augmentedRule, struct{}]()
-
-	for _, ar := range ars {
-		ar.getClosureRecursion(g, closure)
-	}
-
-	// mergedClosure := utils.NewMap[augmentedRule, struct{}]()
-	arLookaheadMap := make(map[simpleAugmentedRule]map[symbol]struct{})
-	for _, ar := range closure.GetAllKeys() {
-		if lookahead, ok := arLookaheadMap[ar.simpleAugmentedRule]; ok {
-			closure.Remove(ar)
-			utils.AddToMap(ar.lookahead, lookahead)
+	for _, rule := range g.ruleNTMap[nextSymbol.name] {
+		newAR := *NewSimpleAugmentedRule(rule, 0)
+		if _, ARExists := closure[newAR]; ARExists {
+			utils.AddToMap(newLookahead, closure[newAR])
 		} else {
-			arLookaheadMap[ar.simpleAugmentedRule] = ar.lookahead
+			closure[newAR] = newLookahead
+			newAR.getClosureRecursion(g, closure)
 		}
 	}
-
-	return closure
 }
 
-func (g *Grammar) getTransitions(ars *utils.Map[augmentedRule, struct{}]) map[symbol]*utils.Map[augmentedRule, struct{}] {
-	transitions := make(map[symbol]*utils.Map[augmentedRule, struct{}])
+func getClosure(g *Grammar, initialClosure map[simpleAugmentedRule]set[symbol]) {
+	for ar := range initialClosure {
+		ar.getClosureRecursion(g, initialClosure)
+	}
+}
 
-	for _, ar := range ars.GetAllKeys() {
+func (g *Grammar) getTransitions(core map[simpleAugmentedRule]set[symbol]) map[symbol]map[simpleAugmentedRule]set[symbol] {
+	transitions := make(map[symbol]map[simpleAugmentedRule]set[symbol])
+
+	for ar, lookahead := range core {
 		nextSymbol := ar.getNextSymbol()
 		if nextSymbol == nil {
 			continue
 		}
 
 		if _, ok := transitions[*nextSymbol]; !ok {
-			transitions[*nextSymbol] = utils.NewMap[augmentedRule, struct{}]()
+			transitions[*nextSymbol] = make(map[simpleAugmentedRule]set[symbol])
 		}
-		closure := getClosure(g, ar.shiftedCopy())
-		transitions[*nextSymbol].PutAll(closure.GetAll())
+
+		newAR := *NewSimpleAugmentedRule(ar.rule, ar.position+1)
+		//TODO may be redundant??
+		if _, ok := transitions[*nextSymbol][newAR]; !ok {
+			transitions[*nextSymbol][newAR] = make(set[symbol])
+		}
+
+		utils.AddToMap(lookahead, transitions[*nextSymbol][newAR])
+		getClosure(g, transitions[*nextSymbol])
 	}
 	return transitions
 }
 
-func findState(target *utils.Map[augmentedRule, struct{}], states []*lr1AutomationState) *lr1AutomationState {
+func findState(target map[simpleAugmentedRule]set[symbol], states []*lr1AutomationState) *lr1AutomationState {
 	for _, state := range states {
-		if target.KeysEqual(*state.augmentedRules) {
+		if reflect.DeepEqual(target, state.augmentedRules) {
 			return state
 		}
 	}
@@ -108,8 +103,10 @@ func (g *Grammar) generateLR1() (*lr1AutomationState, []*lr1AutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id)
-	startRule := NewAugmentedRule(g.Rules[0], 0, map[symbol]struct{}{EndOfInput: {}})
-	kernel.augmentedRules = getClosure(g, startRule)
+	kernel.augmentedRules = map[simpleAugmentedRule]set[symbol]{
+		*NewSimpleAugmentedRule(g.Rules[0], 0): {EndOfInput:struct{}{}},
+	}
+	getClosure(g, kernel.augmentedRules)
 
 	states := []*lr1AutomationState{kernel}
 	openList := []*lr1AutomationState{kernel}

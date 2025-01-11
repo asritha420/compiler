@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"fmt"
+
 	"asritha.dev/compiler/pkg/utils"
 )
 
@@ -12,7 +13,7 @@ type simpleAugmentedRule struct {
 
 func NewSimpleAugmentedRule(r *rule, position int) *simpleAugmentedRule {
 	return &simpleAugmentedRule{
-		rule: r,
+		rule:     r,
 		position: position,
 	}
 }
@@ -29,7 +30,7 @@ func (ar simpleAugmentedRule) getNextSymbol() *symbol {
 }
 
 func (ar simpleAugmentedRule) String() string {
-	rule := ar.rule.nonTerm + "="
+	rule := ar.rule.NonTerm + "="
 	for i, s := range ar.rule.sententialForm {
 		if ar.position == i {
 			rule += "."
@@ -44,7 +45,7 @@ func (ar simpleAugmentedRule) String() string {
 }
 
 func (ar simpleAugmentedRule) StringWithLookahead(lookahead set[symbol]) string {
-	rule := ar.rule.nonTerm + "="
+	rule := ar.rule.NonTerm + "="
 	for i, s := range ar.rule.sententialForm {
 		if ar.position == i {
 			rule += "."
@@ -55,7 +56,7 @@ func (ar simpleAugmentedRule) StringWithLookahead(lookahead set[symbol]) string 
 		rule += "."
 	}
 
-	return fmt.Sprintf("%-*s%v", longestRule + 4, rule, utils.MapToSetString(lookahead))
+	return fmt.Sprintf("%-*s%v", longestRule+4, rule, utils.MapToSetString(lookahead))
 }
 
 // type augmentedRule struct {

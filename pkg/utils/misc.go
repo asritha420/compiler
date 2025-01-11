@@ -57,7 +57,7 @@ func AddToMap[K comparable, V any](src, dst map[K]V) int {
 	return added
 }
 
-func MapToSetString[T comparable, V any](set map[T]V) string {
+func MapToSetString[K comparable, V any](set map[K]V) string {
 	strs := make([]string, len(set))
 	i := 0
 	for val := range set {
@@ -65,6 +65,20 @@ func MapToSetString[T comparable, V any](set map[T]V) string {
 		i++
 	}
 	return fmt.Sprintf("{%s}", strings.Join(strs, ","))
+}
+
+func MapHasSameKeys[K comparable, V any](m1, m2 map[K]V) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+
+	for key := range m1 {
+		if _, ok := m2[key]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 func AssertEqual[T comparable](t *testing.T, varName string, expected T, actual T) {

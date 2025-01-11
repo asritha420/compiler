@@ -46,6 +46,13 @@ func TestLR1(t *testing.T) {
 	r5 := NewRule("T", id)
 
 	g := NewGrammar(r1, r2, r3, r4, r5)
+	// _, states := g.generateLR1()
+	// print(makeMermaid(states))
+
+	state := map[simpleAugmentedRule]set[symbol] {
+		*NewSimpleAugmentedRule(r1, 0): {EndOfInput:struct{}{}},
+	}
+	getClosure(g, state)
 	_, states := g.generateLR1()
 	print(makeMermaid(states))
 }
