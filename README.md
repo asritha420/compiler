@@ -176,14 +176,110 @@ g := &Grammar {
 
 ```mermaid
 flowchart LR
-    id0((0)) -- a --> id1((1))
-        id1((1)) -- b --> id4((4))
-        id4((4)) -- e --> id4((4))
-        id1((1)) -- b --> id2(((2)))
-        id2(((2))) -- c --> id0((0))
-        id2(((2))) -- c --> id1((1))
-        id0((0)) -- a --> id3((3))
-        id3((3)) -- d --> id0((0))
-        id0((0)) -- a --> id0((0))
-        START:::hidden -- start --> id0((0))
+state0["`
+State 0
+E=.E+T     {+,$}
+T=.id(E)   {+,$}
+E=.T       {+,$}
+T=.id      {+,$}
+P=.E       {$}
+`"]
+state0--E-->state1
+state0--id-->state2
+state0--T-->state3
+state1["`
+State 1
+P=E.       {$}
+E=E.+T     {+,$}
+`"]
+state1--\+-->state4
+state2["`
+State 2
+T=id.      {+,$}
+T=id.(E)   {+,$}
+`"]
+state2--(-->state5
+state3["`
+State 3
+E=T.       {$,+}
+`"]
+state4["`
+State 4
+E=E+.T     {+,$}
+T=.id(E)   {$,+}
+T=.id      {+,$}
+`"]
+state4--T-->state6
+state4--id-->state2
+state5["`
+State 5
+T=.id(E)   {),+}
+E=.T       {+,)}
+T=.id      {),+}
+E=.E+T     {+,)}
+T=id(.E)   {+,$}
+`"]
+state5--id-->state7
+state5--T-->state8
+state5--E-->state9
+state6["`
+State 6
+E=E+T.     {+,$}
+`"]
+state7["`
+State 7
+T=id.(E)   {),+}
+T=id.      {+,)}
+`"]
+state7--(-->state10
+state8["`
+State 8
+E=T.       {),+}
+`"]
+state9["`
+State 9
+E=E.+T     {+,)}
+T=id(E.)   {+,$}
+`"]
+state9--\+-->state11
+state9--)-->state12
+state10["`
+State 10
+T=.id(E)   {),+}
+E=.T       {),+}
+T=id(.E)   {+,)}
+T=.id      {+,)}
+E=.E+T     {+,)}
+`"]
+state10--E-->state13
+state10--id-->state7
+state10--T-->state8
+state11["`
+State 11
+E=E+.T     {+,)}
+T=.id(E)   {),+}
+T=.id      {),+}
+`"]
+state11--T-->state14
+state11--id-->state7
+state12["`
+State 12
+T=id(E).   {$,+}
+`"]
+state13["`
+State 13
+T=id(E.)   {),+}
+E=E.+T     {+,)}
+`"]
+state13--)-->state15
+state13--\+-->state11
+state14["`
+State 14
+E=E+T.     {+,)}
+`"]
+state15["`
+State 15
+T=id(E).   {),+}
+`"]
+
 ```

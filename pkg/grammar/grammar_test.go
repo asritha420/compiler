@@ -1,206 +1,76 @@
 package grammar
 
-import (
-	"fmt"
-	"reflect"
-	"testing"
-)
+import "testing"
 
-// TODO: fix this test file, its a mess
-var (
-	rules = []string{
-		`production = expression`,
-		`expression = term expressionPrime`,
-		`expressionPrime = "|" term expressionPrime | " "`, //TODO: write in the spec how EPSILON should be specified as " "
-		`term = factor termPrime`,
-		`termPrime = factor termPrime | " "`,
-		`factor = group factorPrime`,
-		`factorPrime = "*" factorPrime | " "`,
-		`group = "(" expression ")" | [a-z] | [A-Z] | [0-9]`,
-	}
+func TestFirstFollow(t *testing.T) {
+	E := NewNonTerm("E")
+	EP := NewNonTerm("E'")
+	T := NewNonTerm("T")
+	TP := NewNonTerm("T'")
+	F := NewNonTerm("F")
 
-	nonTerminals = []string{"production", "expression", "term", "expressionPrime", "term", "termPrime", "factor", "group", "factorPrime"}
-	terminals    = []string{"|", "*", "(", ")"} // TODO: write in comments or spec how the ranges don't have to be specified in the terminals array -> bc its confusing for the user, honestly might make more sense to just calculate it ourselves
-)
+	plus := NewToken("+")
+	i := NewToken("int")
+	lParen := NewToken("(")
+	rParen := NewToken(")")
+	mult := NewToken("*")
 
-// tests with regex grammar
-func TestNewGrammar(t *testing.T) {
-	result, err := NewGrammar(rules, nonTerminals, terminals)
+	r1 := NewRule("P", E)
+	r2 := NewRule("E", T, EP)
+	r3 := NewRule("E'", plus, T, EP)
+	r4 := NewRule("E'", &Epsilon)
+	r5 := NewRule("T", F, TP)
+	r6 := NewRule("T'", mult, F, TP)
+	r7 := NewRule("T'", &Epsilon)
+	r8 := NewRule("F", lParen, E, rParen)
+	r9 := NewRule("F", i)
 
-	if err != nil {
-		t.Errorf("NewGrammar returned an unexpected error: %s", err)
-	}
+	g := NewGrammar(r1, r2, r3, r4, r5, r6, r7, r8, r9)
 
-	//TODO: could change implementation to use something like this ?
-	regexGrammarSymbols := make(map[string]*symbol)
-	// non-terminals
-	for _, nT := range nonTerminals {
-		regexGrammarSymbols[nT] = newNonTerminalSymbol(nT)
-	}
-	// terminals
-	for _, t := range terminals {
-		regexGrammarSymbols[t] = newTerminalSymbol(t)
-	}
-	// terminal ranges
-	for _, terminalRange := range []symbolType{terminalLowercaseRange, terminalUppercaseRange, terminalNumberRange} {
-		regexGrammarSymbols[terminalRange.String()] = newTerminalRangeSymbol(terminalRange)
-	}
-
-	// epsilon
-	// TODO: define a newEpsilonSymbol()?
-	regexGrammarSymbols["epsilon"] = &symbol{
-		symbolType:    epsilon,
-		validLiterals: []string{" "},
-	}
-	regexGrammar := &Grammar{
-		Rules: []*Rule{
-			{
-				nonTerminal: "production",
-				productions: []production{
-					{
-						regexGrammarSymbols["expression"],
-					},
-				},
-			},
-			{
-				nonTerminal: "expression",
-				productions: []production{
-					{
-						regexGrammarSymbols["term"],
-						regexGrammarSymbols["expressionPrime"],
-					},
-				},
-			},
-			{
-				nonTerminal: "expressionPrime",
-				productions: []production{
-					{
-						regexGrammarSymbols["|"],
-						regexGrammarSymbols["term"],
-						regexGrammarSymbols["expressionPrime"],
-					},
-					{
-						regexGrammarSymbols["epsilon"],
-					},
-				},
-			},
-			{
-				nonTerminal: "term",
-				productions: []production{
-					{
-						regexGrammarSymbols["factor"],
-						regexGrammarSymbols["termPrime"],
-					},
-				},
-			},
-			{
-				nonTerminal: "termPrime",
-				productions: []production{
-					{
-						regexGrammarSymbols["factor"],
-						regexGrammarSymbols["termPrime"],
-					},
-					{
-						regexGrammarSymbols["epsilon"],
-					},
-				},
-			},
-			{
-				nonTerminal: "factor",
-				productions: []production{
-					{
-						regexGrammarSymbols["group"],
-						regexGrammarSymbols["factorPrime"],
-					},
-				},
-			},
-			{
-				nonTerminal: "factorPrime",
-				productions: []production{
-					{
-						regexGrammarSymbols["*"],
-						regexGrammarSymbols["factorPrime"],
-					},
-					{
-						regexGrammarSymbols["epsilon"],
-					},
-				},
-			},
-			{
-				nonTerminal: "group",
-				productions: []production{
-					{
-						regexGrammarSymbols["("],
-						regexGrammarSymbols["expression"],
-						regexGrammarSymbols[")"],
-					},
-					{
-						regexGrammarSymbols["terminalLowercaseRange"],
-					},
-					{
-						regexGrammarSymbols["terminalUppercaseRange"],
-					},
-					{
-						regexGrammarSymbols["terminalNumberRange"],
-					},
-				},
-			},
-		},
-	}
-
-	if !reflect.DeepEqual(result, regexGrammar) {
-		t.Errorf("Result was incorrect: Got %s, want %s", result, regexGrammar)
-	}
+	println(g)
 }
 
-// TODO: move this to grammar file
-func (g *Grammar) String() string {
-	var rules string
-	for _, r := range g.Rules {
-		var productions string
-		for _, p := range r.productions {
-			var symbols string //TODO: should print symbolType literal instead of just number
-			for _, s := range p {
-				symbols = symbols + fmt.Sprintf("\n \t %+v", *s)
-			} //TODO: should group each productions group together instead of just a new line separation
-			productions = productions + symbols + "\n"
-		}
-		rules = rules + fmt.Sprintf("Rule {\n nonTerminal: \"%s\" \n productions: %s}, \n", r.nonTerminal, productions)
-	}
-	return rules
+func setupGrammar() *Grammar {
+	E := NewNonTerm("E")
+	T := NewNonTerm("T")
+
+	plus := NewToken("+")
+	id := NewToken("id")
+	lParen := NewToken("(")
+	rParen := NewToken(")")
+
+	r1 := NewRule("P", E)
+	r2 := NewRule("E", E, plus, T)
+	r3 := NewRule("E", T)
+	r4 := NewRule("T", id, lParen, E, rParen)
+	r5 := NewRule("T", id)
+
+	return NewGrammar(r1, r2, r3, r4, r5)
 }
 
-func TestGenerateFirstSet(t *testing.T) {
-	g, err := NewGrammar(rules, nonTerminals, terminals)
-	//TODO: repeating from above
-	if err != nil {
-		t.Errorf("TODO")
-	}
-
-	/*
-		validFirstSets:
-		production: (, v
-		expression: (, v
-		expressionPrime: |, epsilon
-		term: (, v
-		termPrime: (, v, epsilon
-		factor: (, v
-		factorPrime: *, epsilon
-		group: (, v
-	*/
-
-	_ = [][]rune{
-		{'(', 'v'}, // production
-		{'(', 'v'}, // expression
-		{},         // expressionPrime
-		{'(', 'v'}, // term
-		{},         // termPrime
-		{'(', 'v'}, // factor
-		{},         // factorPrime
-		{'(', 'v'}, // group
-	}
-
-	g.generateFirstSets()
+func TestLR1(t *testing.T) {
+	g := setupGrammar()
+	_, states := generateLR1(g)
+	print(makeMermaid(states))
 }
 
-func TestGenerateFollowSet(t *testing.T) {}
+func TestLALR(t *testing.T) {
+	
+	g := setupGrammar()
+	_, states := generateLALR(g)
+	print(makeMermaid(states))
+}
+
+func TestParser(t *testing.T) {
+	p := NewParser(setupGrammar(), true)
+	input := []Token{
+		{name: "id"},
+		{name: "("},
+		{name: "id"},
+		{name: "+"},
+		{name: "id"},
+		{name: ")"},
+	}
+	tree, _ := p.Parse(input)
+	print(tree)
+}

@@ -57,6 +57,10 @@ func (m *Map[K, V]) resize() {
 	m.PutAll(keys, vals)
 }
 
+func (m *Map[K, V]) Len() int {
+	return m.len
+}
+
 /*
 Puts or replaces a value with the associated key. This will call resize at the beginning iff the load factor has been reached (even if it is just modifying an existing key).
 */
@@ -109,6 +113,14 @@ func (m Map[K, V]) GetAllKeys() []K {
 	}
 
 	return keys
+}
+
+func (m Map[K, V]) GetKeysHash() int {
+	sum := 0
+	for _, key := range m.GetAllKeys() {
+		sum += key.Hash()
+	}
+	return sum
 }
 
 func (m Map[K, V]) GetAllVals() []V {

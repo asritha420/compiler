@@ -1,72 +1,63 @@
 package grammar
 
-type symbolType int
+import (
+	"reflect"
 
-const (
-	nonTerminal symbolType = iota
-	terminal
-	terminalLowercaseRange
-	terminalUppercaseRange
-	terminalNumberRange
-	epsilon
+	"asritha.dev/compiler/pkg/utils"
 )
 
-func (s symbolType) String() string {
-	return [...]string{"nonTerminal", "terminal", "terminalLowercaseRange", "terminalUppercaseRange", "terminalNumberRange", "epsilon"}[s]
-}
+type symbolType int
 
-func (s symbolType) isValid() bool {
+// Note: even if a token is empty (epsilon), it must be passed to the parser.
+// Note: end of file should also be passed as a token matching the endOfFile var
+const (
+	nonTerm symbolType = iota
+	token
+	epsilon
+	endOfInput
+)
 
-}
+var (
+	Epsilon    = symbol{symbolType: epsilon}
+	EndOfInput = symbol{symbolType: endOfInput}
+)
 
+/*
+Represents a single symbol (can be either a non-terminal or a terminal/token)
+*/
 type symbol struct {
-	symbolType    symbolType
-	validLiterals []string // replace with isValid function?
+	symbolType
+	name string
 }
 
-func newNonTerminalSymbol(literal string) *symbol {
-	return &symbol{
-		symbolType:    nonTerminal,
-		validLiterals: []string{literal},
-	}
+func (s symbol) Hash() int {
+	return int(s.symbolType) + utils.HashStr(s.name)
 }
 
-func newTerminalSymbol(literal string) *symbol {
-	symbolType := terminal
+func (s symbol) Equal(other symbol) bool {
+	return reflect.DeepEqual(s, other)
+}
 
-	if literal == " " {
-		symbolType = epsilon
-	}
-
+func NewNonTerm(name string) *symbol {
 	return &symbol{
-		symbolType:    symbolType,
-		validLiterals: []string{literal},
+		symbolType: nonTerm,
+		name:       name,
 	}
 }
 
-func newTerminalRangeSymbol(rangeType symbolType) *symbol {
-	var validLiterals []string
-	var from rune
-	var to rune
-
-	switch rangeType {
-	case terminalLowercaseRange:
-		from = 'a'
-		to = 'z'
-	case terminalUppercaseRange:
-		from = 'A'
-		to = 'Z'
-	case terminalNumberRange:
-		from = '0' //0
-		to = '9'   //9
-	}
-
-	for l := from; l <= to; l++ {
-		validLiterals = append(validLiterals, string(l))
-	}
-
+func NewToken(name string) *symbol {
 	return &symbol{
-		symbolType:    rangeType,
-		validLiterals: validLiterals,
+		symbolType: token,
+		name:       name,
 	}
+}
+
+func (s symbol) String() string {
+	switch s.symbolType {
+	case epsilon:
+		return "ε"
+	case endOfInput:
+		return "$"
+	}
+	return s.name
 }
