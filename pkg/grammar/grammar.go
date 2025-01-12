@@ -1,6 +1,8 @@
 package grammar
 
 import (
+	"log"
+
 	"asritha.dev/compiler/pkg/scannergenerator"
 	"asritha.dev/compiler/pkg/utils"
 )
@@ -44,7 +46,7 @@ func GetGrammarScanner() *scannergenerator.Scanner {
 	grammarTokens := []scannergenerator.TokenInfo{
 		{
 			TokenType:   "letter",
-			RegexString: "[a-z]|[A-Z]",
+			RegexString: "[a-zA-Z]",
 		},
 		{
 			TokenType:   "digit",
@@ -55,8 +57,11 @@ func GetGrammarScanner() *scannergenerator.Scanner {
 			RegexString: `(" " | "\n" | "\t" | "\r" | "\f" | "\b")*`,
 		},
 	}
-	grammarScanner, _ := scannergenerator.NewScanner(grammarTokens)
-
+	grammarScanner, err := scannergenerator.NewScanner(grammarTokens)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	return grammarScanner
 }
 

@@ -19,24 +19,31 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 
 	tokenStream := make([]Token, 0)
 	currToken := &Token{}
-	var currWord string
 
-	matchesNone := func() bool {
+	findMatch := func(str string) bool {
 		for _, ts := range s.tokenSpec {
-			if ts.regexp.MatchString(currWord) {
+			if len(ts.regexp.FindString(str)) == len(str) {
 				currToken.Name = ts.TokenType
-				currToken.Literal = currWord
-				return false
+				currToken.Literal = str
+				return true
 			}
 		}
-		return true
+		return false
 	}
 
-	for _, character := range code {
-		currWord += string(character)
-		if matchesNone() {
-			tokenStream = append(tokenStream, *currToken)
-			currWord = string(character)
+	currWord := ""
+	currIdx := 0
+	for currIdx != len(code){
+		currWord += string(code[currIdx])
+		currIdx++
+		if !findMatch(currWord) {
+			if len(currWord) == 1 {
+				tokenStream = append(tokenStream, Token{currWord, currWord})
+			} else {
+				tokenStream = append(tokenStream, *currToken)
+				currIdx--
+			}
+			currWord = ""
 		}
 	}
 
@@ -48,12 +55,13 @@ func NewScanner(tokenSpec []TokenInfo) (*Scanner, error) {
 		tokenSpec: make([]TokenInfo, 0),
 	}
 
-	for _, tokenInfo := range s.tokenSpec {
+	for _, tokenInfo := range tokenSpec {
 		regex, err := regexp.Compile(tokenInfo.RegexString)
 		if err != nil {
 			return nil, err
 		}
 		tokenInfo.regexp = *regex
+		s.tokenSpec = append(s.tokenSpec, tokenInfo)
 	}
 
 	return s, nil
