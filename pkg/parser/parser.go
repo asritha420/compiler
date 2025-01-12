@@ -57,7 +57,7 @@ func NewParser(g *Grammar, useLALR bool) *parser {
 }
 
 func (p parser) makeTables() {
-	endAR := *NewAugmentedRule(p.Grammar.Rules[0], len(p.Grammar.Rules[0].SententialForm))
+	endAR := *NewAugmentedRule(p.FirstRule, len(p.FirstRule.SententialForm))
 
 	for _, s := range p.states {
 		p.gotoTable[s] = make(map[string]*lrAutomationState)
@@ -67,7 +67,7 @@ func (p parser) makeTables() {
 			nextSymbol := ar.getNextSymbol()
 			if nextSymbol == nil {
 				for symbol := range lookahead {
-					p.actionTable[s][symbol] = newReduce(ar.rule)
+					p.actionTable[s][symbol] = newReduce(ar.Rule)
 				}
 				if ar == endAR {
 					p.actionTable[s][EndOfInput] = accept

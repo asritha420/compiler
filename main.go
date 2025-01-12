@@ -180,7 +180,7 @@ func main() {
 
 	p := NewParser(g, true)
 
-	tokens, err := gs.Scan("P=E;E=(lol);")
+	tokens, err := gs.Scan("P=E ;\n\nE=(lol);\nR=hello | test, y\n;")
 	if err != nil {
 		log.Fatal(err)
 	}

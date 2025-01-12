@@ -8,13 +8,13 @@ import (
 )
 
 type augmentedRule struct {
-	rule     *Rule
+	*Rule
 	position int
 }
 
 func NewAugmentedRule(r *Rule, position int) *augmentedRule {
 	return &augmentedRule{
-		rule:     r,
+		Rule:     r,
 		position: position,
 	}
 }
@@ -24,21 +24,21 @@ Returns the next symbol (symbol to right of position) in an augmented rule or ni
 */
 func (ar augmentedRule) getNextSymbol() *Symbol {
 	//Note: position should NOT be more than len(sententialForm)
-	if ar.position == len(ar.rule.SententialForm) {
+	if ar.position == len(ar.SententialForm) {
 		return nil
 	}
-	return ar.rule.SententialForm[ar.position]
+	return ar.SententialForm[ar.position]
 }
 
 func (ar augmentedRule) String() string {
-	rule := ar.rule.NonTerm + "="
-	for i, s := range ar.rule.SententialForm {
+	rule := ar.NonTerm + "="
+	for i, s := range ar.SententialForm {
 		if ar.position == i {
 			rule += "."
 		}
 		rule += s.String()
 	}
-	if ar.position == len(ar.rule.SententialForm) {
+	if ar.position == len(ar.SententialForm) {
 		rule += "."
 	}
 
@@ -46,14 +46,14 @@ func (ar augmentedRule) String() string {
 }
 
 func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol], minSpacing int) string {
-	rule := ar.rule.NonTerm + " ="
-	for i, s := range ar.rule.SententialForm {
+	rule := ar.NonTerm + " ="
+	for i, s := range ar.SententialForm {
 		if ar.position == i {
 			rule += " ."
 		}
 		rule += " " + s.String()
 	}
-	if ar.position == len(ar.rule.SententialForm) {
+	if ar.position == len(ar.SententialForm) {
 		rule += " ."
 	}
 

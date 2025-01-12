@@ -51,7 +51,7 @@ func (ar augmentedRule) getClosureRecursion(g *Grammar, closure arLookaheadMap) 
 		return
 	}
 
-	sentential := ar.rule.SententialForm[ar.position+1:]
+	sentential := ar.SententialForm[ar.position+1:]
 	newLookahead := g.GenerateFirstSet(sentential...)
 	if _, ok := newLookahead[Epsilon]; ok {
 		utils.AddToMap(closure[ar], newLookahead) //add lookahead of current ar if it can be finished with epsilon
@@ -88,7 +88,7 @@ func getTransitions(g *Grammar, core arLookaheadMap) map[Symbol]arLookaheadMap {
 			transitions[*nextSymbol] = make(arLookaheadMap)
 		}
 
-		newAR := *NewAugmentedRule(ar.rule, ar.position+1)
+		newAR := *NewAugmentedRule(ar.Rule, ar.position+1)
 		//if transitions are not make correctly it may be HERE
 		//removed check for if transitions[*nextSymbol][newAR] was already set because it seemed redundant
 		transitions[*nextSymbol][newAR] = maps.Clone(lookahead)
@@ -111,7 +111,7 @@ func generateLR1(g *Grammar) (*lrAutomationState, []*lrAutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.Rules[0], 0): {EndOfInput: struct{}{}},
+		*NewAugmentedRule(g.FirstRule, 0): {EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 
@@ -154,7 +154,7 @@ func generateLALR(g *Grammar) (*lrAutomationState, []*lrAutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.Rules[0], 0): {EndOfInput: struct{}{}},
+		*NewAugmentedRule(g.FirstRule, 0): {EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 
