@@ -14,10 +14,11 @@ func main() {
 
 	p := NewParser(g, true)
 
-	tokens, err := gs.Scan("P = E; \n E = (lol);")
+	tokens, err := gs.Scan("P=E;E=(lol);")
 	if err != nil {
 		log.Fatal(err)
 	}
-	p.Parse(tokens)
-	fmt.Println(tokens)
+	println(p.MakeMermaid())
+	tree, _ := p.Parse(tokens)
+	fmt.Println(tree)
 }

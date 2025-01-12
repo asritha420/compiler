@@ -54,7 +54,7 @@ func GetGrammarScanner() *scannergenerator.Scanner {
 		},
 		{
 			TokenType:   "space",
-			RegexString: `(" " | "\n" | "\t" | "\r" | "\f" | "\b")*`,
+			RegexString: `\s+`,
 		},
 	}
 	grammarScanner, err := scannergenerator.NewScanner(grammarTokens)

@@ -19,6 +19,8 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 
 	tokenStream := make([]Token, 0)
 	currToken := &Token{}
+	currWord := ""
+	nextIdx := 0
 
 	findMatch := func(str string) bool {
 		for _, ts := range s.tokenSpec {
@@ -31,20 +33,23 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 		return false
 	}
 
-	currWord := ""
-	currIdx := 0
-	for currIdx != len(code){
-		currWord += string(code[currIdx])
-		currIdx++
+	
+	for nextIdx != len(code){
+		currWord += string(code[nextIdx])
+		nextIdx++
 		if !findMatch(currWord) {
 			if len(currWord) == 1 {
 				tokenStream = append(tokenStream, Token{currWord, currWord})
 			} else {
 				tokenStream = append(tokenStream, *currToken)
-				currIdx--
+				nextIdx--
 			}
 			currWord = ""
 		}
+	}
+
+	if *currToken != tokenStream[len(tokenStream)-1] {
+		tokenStream = append(tokenStream, *currToken)
 	}
 
 	return tokenStream, nil

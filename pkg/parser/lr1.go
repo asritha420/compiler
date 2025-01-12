@@ -187,13 +187,9 @@ func generateLALR(g *Grammar) (*lrAutomationState, []*lrAutomationState) {
 func makeMermaid(states []*lrAutomationState) string {
 	mermaid := ""
 	for _, state := range states {
-		mermaid += fmt.Sprintf("state%d[\"`\n%s\n`\"]\n", state.id, state.String())
+		mermaid += fmt.Sprintf("state \"\n%s\n\" as s%d\n", strings.ReplaceAll(state.String(), "\"", "'"), state.id)
 		for key, val := range state.transitions {
-			transition := key.String()
-			if transition == "+" {
-				transition = "\\+"
-			}
-			mermaid += fmt.Sprintf("state%d--%s-->state%d\n", state.id, transition, val.id)
+			mermaid += fmt.Sprintf("s%d-->s%d: '%s'\n", state.id, val.id, key.String())
 		}
 	}
 	return mermaid

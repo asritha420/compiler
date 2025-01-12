@@ -46,15 +46,15 @@ func (ar augmentedRule) String() string {
 }
 
 func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol]) string {
-	rule := ar.rule.NonTerm + "="
+	rule := ar.rule.NonTerm + " ="
 	for i, s := range ar.rule.SententialForm {
 		if ar.position == i {
-			rule += "."
+			rule += " ."
 		}
-		rule += s.String()
+		rule += " " + s.String()
 	}
 	if ar.position == len(ar.rule.SententialForm) {
-		rule += "."
+		rule += " ."
 	}
 
 	return fmt.Sprintf("%-*s%v", LongestRule+4, rule, utils.MapToSetString(lookahead))

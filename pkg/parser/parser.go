@@ -157,3 +157,7 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 		stack = append(stack, p.gotoTable[stack[newStackLen-1]][nextAction.reduce.NonTerm])
 	}
 }
+
+func (p parser) MakeMermaid() string {
+	return makeMermaid(p.states)
+}

@@ -58,6 +58,8 @@ func (s Symbol) String() string {
 		return "ε"
 	case endOfInputSymbol:
 		return "$"
+	case TokenSymbol, NonTermSymbol:
+		return s.Name
 	}
-	return s.Name
+	return ""
 }
