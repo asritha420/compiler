@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	. "asritha.dev/compiler/pkg/grammar"
+	. "asritha.dev/compiler/pkg/scannergenerator"
 )
 
 var (
@@ -88,11 +89,6 @@ func (p parser) makeTables() {
 	}
 }
 
-type Token struct {
-	name    string
-	literal string
-}
-
 type parseTreeNode struct {
 	name     string
 	literal  string
@@ -108,8 +104,8 @@ func newParseTreeNonTerm(name string, children []*parseTreeNode) *parseTreeNode 
 
 func newParseTreeToken(t Token) *parseTreeNode {
 	return &parseTreeNode{
-		name:    t.name,
-		literal: t.literal,
+		name:    t.Name,
+		literal: t.Literal,
 	}
 }
 
@@ -119,13 +115,13 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 
 	for {
 		stackTop := stack[len(stack)-1] //top of stack
-		var firstInput Token      // first input
+		var firstInput Token            // first input
 		var firstInputSymbol Symbol     // first input as symbol (may be EndOfInput)
 		if len(input) == 0 {
 			firstInputSymbol = EndOfInput
 		} else {
 			firstInput = input[0]
-			firstInputSymbol = *NewToken(firstInput.name)
+			firstInputSymbol = *NewToken(firstInput.Name)
 		}
 
 		nextAction, ok := p.actionTable[stackTop][firstInputSymbol]

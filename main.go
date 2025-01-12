@@ -1,24 +1,23 @@
 package main
 
 import (
-	"asritha.dev/compiler/pkg/scanner"
+	. "asritha.dev/compiler/pkg/grammar"
+	. "asritha.dev/compiler/pkg/parser"
 	"fmt"
+	"log"
 )
 
 func main() {
-	tInitInfos := []*scanner.TokenInitInfo{
-		{
-			3,
-			"FOR",
-			"for",
-		},
-	}
+	g := GenerateGrammar()
 
-	s := scanner.NewScanner(tInitInfos)
-	tokens, err := s.Scan()
+	gs := GetGrammarScanner()
+
+	p := NewParser(g, true)
+
+	tokens, err := gs.Scan("P = E; \n E = (lol);")
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(tokens)
+		log.Fatal(err)
 	}
+	p.Parse(tokens)
+	fmt.Println(tokens)
 }

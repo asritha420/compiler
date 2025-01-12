@@ -1,6 +1,9 @@
 package grammar
 
-import "asritha.dev/compiler/pkg/utils"
+import (
+	"asritha.dev/compiler/pkg/scannergenerator"
+	"asritha.dev/compiler/pkg/utils"
+)
 
 type Grammar struct {
 	Rules []*Rule
@@ -25,6 +28,36 @@ func NewGrammar(rules ...*Rule) *Grammar {
 	g.generateFollowSets()
 
 	return g
+}
+
+func NewSimpleGrammar(rules ...string) *Grammar {
+	g := &Grammar{
+		FirstSets:  make(map[string]utils.Set[Symbol]),
+		FollowSets: make(map[string]utils.Set[Symbol]),
+	}
+
+	return g
+}
+
+func GetGrammarScanner() *scannergenerator.Scanner {
+
+	grammarTokens := []scannergenerator.TokenInfo{
+		{
+			TokenType:   "letter",
+			RegexString: "[a-z]|[A-Z]",
+		},
+		{
+			TokenType:   "digit",
+			RegexString: "[0-9]",
+		},
+		{
+			TokenType:   "space",
+			RegexString: `(" " | "\n" | "\t" | "\r" | "\f" | "\b")*`,
+		},
+	}
+	grammarScanner, _ := scannergenerator.NewScanner(grammarTokens)
+
+	return grammarScanner
 }
 
 func GenerateGrammar() *Grammar {

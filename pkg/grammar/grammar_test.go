@@ -1,6 +1,8 @@
 package grammar
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFirstFollow(t *testing.T) {
 	E := NewNonTerm("E")
