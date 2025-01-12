@@ -1,0 +1,3 @@
+- need literal in token ?
+- how to handle errors?
+- how to limit length of identifier 

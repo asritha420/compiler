@@ -1,53 +1,44 @@
 package scannergenerator
 
 import (
-	"asritha.dev/compiler/pkg/scannergenerator/internal/regex"
-	"fmt"
 	"regexp"
+	"strings"
 )
 
 type Scanner struct {
-	Tokens    []Token
 	tokenSpec map[TokenType]regexp.Regexp
 }
 
-func (s *Scanner) convertTokenRegexToFA() {
-	//for _, tII := range s.tInitInfos {
-	//	_ = convertRegexToParseTree(tII.Regex)
-	//	// parseTree.getNFA() //.removeEpsilonTransitions().convertToPseudoDFA().minimize()
-	//}
-}
+func (s *Scanner) Scan(code string) ([]Token, error) {
 
-// TODO: move these helper methods somewhere else ?
-func convertRegexToParseTree(regex string) regex.RExpr {
-	return nil
-}
+	tokenStream := make([]Token, 0)
 
-func (s *Scanner) Scan(codeFile string) ([]Token, error) {
-	return make([]Token, 0), fmt.Errorf("Failed to scan code :(")
-}
+	codeWords := strings.Split(code, " ")
 
-// NewScanner will take in a map of
-func NewScanner(tokenSpecs map[TokenType]string) (*Scanner, error) {
-	scanner := &Scanner{
-		Tokens:    make([]Token, 0),
-		tokenSpec: make(map[TokenType]regexp.Regexp),
+	for _, word := range codeWords {
+		for tokenType, regex := range s.tokenSpec {
+			if regex.MatchString(word) {
+				tokenStream = append(tokenStream, Token{
+					TokenType: tokenType,
+					Lexeme:    word,
+				})
+			}
+		}
 	}
 
-	for tokenType, regexString := range tokenSpecs {
-		// throw error if regexString is invalid
-		regex, err := regexp.Compile(regexString)
+	return tokenStream, nil
+}
 
+func NewScanner(tokenSpec map[TokenType]string) (*Scanner, error) {
+	s := &Scanner{
+		tokenSpec: make(map[TokenType]regexp.Regexp),
+	}
+	for tokenType, regexString := range tokenSpec {
+		regex, err := regexp.Compile(regexString)
 		if err != nil {
 			return nil, err
 		}
-
-		// TODO: check if in our list of supported regexs
-
-		// TODO: handle error of providing multiple definitions for same tokenType
-
-		scanner.tokenSpec[tokenType] = *regex
+		s.tokenSpec[tokenType] = *regex
 	}
-
-	return scanner, nil
+	return s, nil
 }
