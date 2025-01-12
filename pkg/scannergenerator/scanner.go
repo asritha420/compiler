@@ -20,7 +20,7 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 	currToken := &Token{}
 	var currWord string
 
-	matchesNone := func(currWord string) bool {
+	matchesNone := func() bool {
 		for _, ts := range s.tokenSpec {
 			if ts.regexp.MatchString(currWord) {
 				currToken.TokenType = ts.TokenType
@@ -33,7 +33,7 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 
 	for _, character := range code {
 		currWord += string(character)
-		if matchesNone(currWord) {
+		if matchesNone() {
 			tokenStream = append(tokenStream, *currToken)
 			currWord = ""
 		}
