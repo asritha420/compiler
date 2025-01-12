@@ -48,7 +48,7 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 		}
 	}
 
-	if *currToken != tokenStream[len(tokenStream)-1] {
+	if len(currWord)!= 0 && findMatch(currWord) {
 		tokenStream = append(tokenStream, *currToken)
 	}
 

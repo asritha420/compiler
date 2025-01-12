@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	println(p.MakeMermaid())
+	println(p.MakeGraph(true))
 	tree, _ := p.Parse(tokens)
 	fmt.Println(tree)
 }

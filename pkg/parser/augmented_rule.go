@@ -45,7 +45,7 @@ func (ar augmentedRule) String() string {
 	return rule
 }
 
-func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol]) string {
+func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol], minSpacing int) string {
 	rule := ar.rule.NonTerm + " ="
 	for i, s := range ar.rule.SententialForm {
 		if ar.position == i {
@@ -57,5 +57,5 @@ func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol]) string 
 		rule += " ."
 	}
 
-	return fmt.Sprintf("%-*s%v", LongestRule+4, rule, utils.MapToSetString(lookahead))
+	return fmt.Sprintf("%-*s%v", minSpacing, rule, utils.MapToSetString(lookahead))
 }

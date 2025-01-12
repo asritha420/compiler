@@ -6,27 +6,16 @@ import (
 	"asritha.dev/compiler/pkg/utils"
 )
 
-var (
-	LongestRule = 0
-)
-
 type Rule struct {
 	NonTerm        string
 	SententialForm []*Symbol
 }
 
 func NewRule(nonTerm string, sententialForm ...*Symbol) *Rule {
-	newRule := &Rule{
+	return &Rule{
 		NonTerm:        nonTerm,
 		SententialForm: sententialForm,
 	}
-
-	len := len(newRule.String())
-	if len > LongestRule {
-		LongestRule = len
-	}
-
-	return newRule
 }
 
 func (r Rule) String() string {

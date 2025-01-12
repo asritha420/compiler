@@ -28,10 +28,18 @@ func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomatio
 }
 
 func (s *lrAutomationState) String() string {
+	longestRule := 0
+	for r := range s.arLookaheadMap {
+		rLen := len(r.String())
+		if rLen > longestRule {
+			longestRule = rLen
+		}
+	}
+
 	rules := make([]string, len(s.arLookaheadMap))
 	i := 0
 	for ar, lookahead := range s.arLookaheadMap {
-		rules[i] = ar.StringWithLookahead(lookahead)
+		rules[i] = ar.StringWithLookahead(lookahead, longestRule+6)
 		i++
 	}
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
@@ -193,4 +201,18 @@ func makeMermaid(states []*lrAutomationState) string {
 		}
 	}
 	return mermaid
+}
+
+func makeGraphviz(states []*lrAutomationState) string {
+	graph := "node [shape=box]\n"
+	for _, state := range states {
+		stateStr := state.String()
+		stateStr = strings.ReplaceAll(stateStr, "\n", "\\l")
+		stateStr = strings.ReplaceAll(stateStr, "\"", "\\\"")
+		graph += fmt.Sprintf("s%d [label=\"%s\"]\n", state.id, stateStr)
+		for key, val := range state.transitions {
+			graph += fmt.Sprintf("s%d -> s%d [label=\"%s\"]\n", state.id, val.id, strings.ReplaceAll(key.String(), "\"", "\\\""))
+		}
+	}
+	return graph
 }

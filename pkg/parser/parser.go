@@ -158,6 +158,9 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 	}
 }
 
-func (p parser) MakeMermaid() string {
+func (p parser) MakeGraph(graphviz bool) string {
+	if graphviz {
+		return makeGraphviz(p.states)
+	}
 	return makeMermaid(p.states)
 }
