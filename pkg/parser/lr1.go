@@ -203,15 +203,25 @@ func makeMermaid(states []*lrAutomationState) string {
 	return mermaid
 }
 
+func makeGraphvizSafe(str string) string {
+	return strings.ReplaceAll(
+		strings.ReplaceAll(
+			strings.ReplaceAll(
+				str,
+				`\`, `\\`,
+			),
+			"\n", `\l`,
+		),
+		`"`, `\"`,
+	)
+}
+
 func makeGraphviz(states []*lrAutomationState) string {
 	graph := "node [shape=box]\n"
 	for _, state := range states {
-		stateStr := state.String()
-		stateStr = strings.ReplaceAll(stateStr, "\n", "\\l")
-		stateStr = strings.ReplaceAll(stateStr, "\"", "\\\"")
-		graph += fmt.Sprintf("s%d [label=\"%s\"]\n", state.id, stateStr)
+		graph += fmt.Sprintf("s%d [label=\"%s\"]\n", state.id, makeGraphvizSafe(state.String()))
 		for key, val := range state.transitions {
-			graph += fmt.Sprintf("s%d -> s%d [label=\"%s\"]\n", state.id, val.id, strings.ReplaceAll(key.String(), "\"", "\\\""))
+			graph += fmt.Sprintf("s%d -> s%d [label=\"%s\"]\n", state.id, val.id, makeGraphvizSafe(key.String()))
 		}
 	}
 	return graph

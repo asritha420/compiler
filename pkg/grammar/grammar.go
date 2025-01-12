@@ -1,9 +1,6 @@
 package grammar
 
 import (
-	"log"
-
-	"asritha.dev/compiler/pkg/scannergenerator"
 	"asritha.dev/compiler/pkg/utils"
 )
 
@@ -29,101 +26,6 @@ func NewGrammar(rules ...*Rule) *Grammar {
 	g.generateFirstSets()
 	g.generateFollowSets()
 
-	return g
-}
-
-func NewSimpleGrammar(rules ...string) *Grammar {
-	g := &Grammar{
-		FirstSets:  make(map[string]utils.Set[Symbol]),
-		FollowSets: make(map[string]utils.Set[Symbol]),
-	}
-
-	return g
-}
-
-func GetGrammarScanner() *scannergenerator.Scanner {
-
-	grammarTokens := []scannergenerator.TokenInfo{
-		{
-			TokenType:   "letter",
-			RegexString: "[a-zA-Z]",
-		},
-		{
-			TokenType:   "digit",
-			RegexString: "[0-9]",
-		},
-		{
-			TokenType:   "space",
-			RegexString: `\s+`,
-		},
-	}
-	grammarScanner, err := scannergenerator.NewScanner(grammarTokens)
-	if err != nil {
-		log.Fatal(err)
-	}
-	
-	return grammarScanner
-}
-
-func GenerateGrammar() *Grammar {
-	// Non-terminals
-	rules := NewNonTerm("rules")
-	rule := NewNonTerm("rule")
-	lhs := NewNonTerm("lhs")
-	rhs := NewNonTerm("rhs")
-	alternation := NewNonTerm("alternation")
-	concatenation := NewNonTerm("concatenation")
-	term := NewNonTerm("term")
-	terminal := NewNonTerm("terminal")
-	chars := NewNonTerm("chars")
-	character := NewNonTerm("character")
-	identifier := NewNonTerm("identifier")
-	identifierChar := NewNonTerm("identifierChar")
-
-	// Tokens
-	assign := NewToken("=")
-	semicolon := NewToken(";")
-	pipe := NewToken("|")
-	comma := NewToken(",")
-	epsilon := &Epsilon
-
-	// Symbol tokens
-	symbol := NewToken("symbol")
-	letter := NewToken("letter")
-	digit := NewToken("digit")
-	underscore := NewToken("_")
-	space := NewToken(" ")
-
-	// Rules
-	r1 := NewRule("start", rules)
-	r2 := NewRule("rules", rule, rules)
-	r3 := NewRule("rules", rule)
-	r4 := NewRule("rule", lhs, assign, rhs, semicolon)
-	r5 := NewRule("lhs", identifier)
-	r6 := NewRule("rhs", alternation)
-	r7 := NewRule("alternation", concatenation, pipe, alternation)
-	r8 := NewRule("alternation", concatenation)
-	r9 := NewRule("concatenation", term, comma, concatenation)
-	r10 := NewRule("concatenation", term)
-	r11 := NewRule("term", terminal)
-	r12 := NewRule("term", identifier)
-	r13 := NewRule("term", NewToken("("), rhs, NewToken(")"))
-	r14 := NewRule("terminal", NewToken("\""), chars, NewToken("\""))
-	r15 := NewRule("chars", character, chars)
-	r16 := NewRule("chars", epsilon)
-	r17 := NewRule("character", letter)
-	r18 := NewRule("character", digit)
-	r19 := NewRule("character", symbol)
-	r20 := NewRule("character", underscore)
-	r21 := NewRule("character", space)
-	r22 := NewRule("identifier", identifierChar, identifier)
-	r23 := NewRule("identifier", identifierChar)
-	r24 := NewRule("identifierChar", letter)
-	r25 := NewRule("identifierChar", digit)
-	r26 := NewRule("identifierChar", underscore)
-
-	// Create grammar
-	g := NewGrammar(r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26)
 	return g
 }
 

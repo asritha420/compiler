@@ -2,31 +2,33 @@ Tokens for Scanner
 ```
 letter = [a-z] | [A-Z]
 digit = [0-9]
-space = (" " | "\n" | "\t" | "\r" | "\f" | "\b")*
+space = \s+
 ```
 
 Grammar Rules
 ```
-start = rules
+start = rules;
 
 symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"
-       | "'" | '\"' | "=" | "|" | "." | "," | ";" | "-" 
-       | "+" | "*" | "?" ;
+       | "'" | "\"" | "=" | "|" | "." | "," | ";" | "-" 
+       | "+" | "*" | "?" | "_" | "/" | "\\";
 
-character = letter | digit | symbol | "_" | " " ;
+strChar = "letter" | "digit" | "space" | symbol ;
+idChar = "letter" | "digit" | "_";
 
-identifierChar = letter | digit | "_"
-identifier = identifierChar | identifierChar, identifier
-chars = epsilon | character, chars
-terminal = "\"" chars "\""
+identifier = idChar | idChar, identifier;
+string = epsilon | strChar, string;
+token = "\"" string "\"";
+S = space | epsilon;
 
-term = terminal | identifier | "(", rhs, ")"
-concatenation = term | term, ",", concatenation
-alternation = concatenation | concatenation, "|", alternation
+term = token | identifier | "(", rhs, ")";
+sTerm = S, term, S;
+concatenation = sTerm | sTerm, ",", concatenation;
+alternation = concatenation | concatenation, "|", alternation;
 
-lhs = identifier
-rhs = alternation
+lhs = identifier;
+rhs = alternation;
 
-rule = lhs, "=", rhs, ";"
-rules = rule | rule, rules
+rule = S, lhs, S, "=", rhs, ";", S;
+rules = rule | rule, rules;
 ```

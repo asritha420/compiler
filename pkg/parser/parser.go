@@ -75,7 +75,7 @@ func (p parser) makeTables() {
 				continue
 			}
 
-			if nextSymbol.SymbolType == TokenSymbol {
+			if nextSymbol.SymbolType == TokenSymbol{
 				p.actionTable[s][*nextSymbol] = newShift(s.transitions[*nextSymbol])
 				continue
 			}
