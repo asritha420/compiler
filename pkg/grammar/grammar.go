@@ -96,7 +96,7 @@ func (g *Grammar) generateFollowSets() {
 			for i, s := range rule.SententialForm {
 				if s.SymbolType != NonTermSymbol {
 					continue
-				}
+				} 
 
 				firstSet := g.GenerateFirstSet(rule.SententialForm[i+1:]...)
 				_, containsEpsilon := firstSet[Epsilon]
