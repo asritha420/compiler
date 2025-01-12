@@ -1,40 +1,163 @@
 package parser
 
-import "asritha.dev/compiler/pkg/grammar"
+import (
+	"fmt"
+	"slices"
 
-type LLTableParser struct {
-	//stack -> TODO: make generic stack in utils folder
-	parseTable []map[string]int // parseTable T[A, a], where A is a non-terminal, and a is a terminal; is used to determine which rule should be applied for any combination of a non-terminal on the stack and next token in the input stream
-	// should be of fixed length
-	*grammar.Grammar
+	. "asritha.dev/compiler/pkg/grammar"
+)
+
+var (
+	accept = action{accept: true}
+)
+
+type action struct {
+	shift  *lrAutomationState
+	reduce *Rule
+	accept bool
 }
 
-/*
-LL(1) Parse Table Construction:
+func newReduce(r *Rule) action {
+	return action{reduce: r}
+}
 
-*/
-func (tp *LLTableParser) constructParseTable() {
-	for i, rule := range tp.Rules {
-		firstSet := tp.FirstSets[rule.NonTerm]
-		for k, _ := range firstSet {
-			tp.parseTable[i][k.String()] = i
+func newShift(s *lrAutomationState) action {
+	return action{shift: s}
+}
+
+type parser struct {
+	*Grammar
+	useLALR     bool
+	kernel      *lrAutomationState
+	states      []*lrAutomationState
+	gotoTable   map[*lrAutomationState]map[string]*lrAutomationState
+	actionTable map[*lrAutomationState]map[Symbol]action
+}
+
+func NewParser(g *Grammar, useLALR bool) *parser {
+	var kernel *lrAutomationState
+	var states []*lrAutomationState
+	if useLALR {
+		kernel, states = generateLALR(g)
+	} else {
+		kernel, states = generateLR1(g)
+	}
+	p := &parser{
+		Grammar:     g,
+		useLALR:     useLALR,
+		kernel:      kernel,
+		states:      states,
+		gotoTable:   make(map[*lrAutomationState]map[string]*lrAutomationState),
+		actionTable: make(map[*lrAutomationState]map[Symbol]action),
+	}
+	p.makeTables()
+
+	return p
+}
+
+func (p parser) makeTables() {
+	endAR := *NewAugmentedRule(p.Grammar.Rules[0], len(p.Grammar.Rules[0].SententialForm))
+
+	for _, s := range p.states {
+		p.gotoTable[s] = make(map[string]*lrAutomationState)
+		p.actionTable[s] = make(map[Symbol]action)
+
+		for ar, lookahead := range s.arLookaheadMap {
+			nextSymbol := ar.getNextSymbol()
+			if nextSymbol == nil {
+				for symbol := range lookahead {
+					p.actionTable[s][symbol] = newReduce(ar.rule)
+				}
+				if ar == endAR {
+					p.actionTable[s][EndOfInput] = accept
+				}
+				continue
+			}
+
+			if nextSymbol.SymbolType == TokenSymbol {
+				p.actionTable[s][*nextSymbol] = newShift(s.transitions[*nextSymbol])
+				continue
+			}
+
+			if nextSymbol.SymbolType == NonTermSymbol {
+				p.gotoTable[s][nextSymbol.Name] = s.transitions[*nextSymbol]
+			}
+
+			// other symbol types should not appear but if they do don't do anything
 		}
 	}
 }
 
-func (tp *LLTableParser) Parse() {
-
+type Token struct {
+	name    string
+	literal string
 }
 
-func NewLLTableParser(g *grammar.Grammar) *LLTableParser {
-
+type parseTreeNode struct {
+	name     string
+	literal  string
+	children []*parseTreeNode
 }
 
-/*
-user will:
+func newParseTreeNonTerm(name string, children []*parseTreeNode) *parseTreeNode {
+	return &parseTreeNode{
+		name:     name,
+		children: children,
+	}
+}
 
-tokens := []Token // from scanner
-grammar := NewGrammar(xxxx)
-tableParser := NewLLTableParser(grammar)
-parseTree := tableParser.parse(tokens)
-*/
+func newParseTreeToken(t Token) *parseTreeNode {
+	return &parseTreeNode{
+		name:    t.name,
+		literal: t.literal,
+	}
+}
+
+func (p parser) Parse(input []Token) (*parseTreeNode, error) {
+	stack := []*lrAutomationState{p.kernel}
+	treeStack := make([]*parseTreeNode, 0)
+
+	for {
+		stackTop := stack[len(stack)-1] //top of stack
+		var firstInput Token      // first input
+		var firstInputSymbol Symbol     // first input as symbol (may be EndOfInput)
+		if len(input) == 0 {
+			firstInputSymbol = EndOfInput
+		} else {
+			firstInput = input[0]
+			firstInputSymbol = *NewToken(firstInput.name)
+		}
+
+		nextAction, ok := p.actionTable[stackTop][firstInputSymbol]
+		if !ok {
+			return nil, fmt.Errorf("unexpected input")
+		}
+
+		if nextAction.accept {
+			// accept
+			root := newParseTreeNonTerm(p.FirstRule.NonTerm, treeStack)
+			return root, nil
+		}
+
+		if nextAction.shift != nil {
+			// shift
+			stack = append(stack, nextAction.shift)
+			treeStack = append(treeStack, newParseTreeToken(firstInput))
+			input = input[1:]
+			continue
+		}
+
+		// reduce
+		ruleLen := len(nextAction.reduce.SententialForm)
+		newStackLen := len(stack) - ruleLen
+		newTreeStackLen := len(treeStack) - ruleLen
+
+		newNode := newParseTreeNonTerm(nextAction.reduce.NonTerm, slices.Clone(treeStack[newTreeStackLen:]))
+
+		treeStack = treeStack[0:newTreeStackLen]
+		treeStack = append(treeStack, newNode)
+
+		stack = stack[0:newStackLen]
+		stack = append(stack, p.gotoTable[stack[newStackLen-1]][nextAction.reduce.NonTerm])
+	}
+}

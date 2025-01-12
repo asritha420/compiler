@@ -1,17 +1,18 @@
-package grammar
+package parser
 
 import (
 	"fmt"
 
 	"asritha.dev/compiler/pkg/utils"
+	."asritha.dev/compiler/pkg/grammar"
 )
 
 type augmentedRule struct {
-	rule     *rule
+	rule     *Rule
 	position int
 }
 
-func NewAugmentedRule(r *rule, position int) *augmentedRule {
+func NewAugmentedRule(r *Rule, position int) *augmentedRule {
 	return &augmentedRule{
 		rule:     r,
 		position: position,
@@ -21,40 +22,40 @@ func NewAugmentedRule(r *rule, position int) *augmentedRule {
 /*
 Returns the next symbol (symbol to right of position) in an augmented rule or nil if there is no next symbol
 */
-func (ar augmentedRule) getNextSymbol() *symbol {
+func (ar augmentedRule) getNextSymbol() *Symbol {
 	//Note: position should NOT be more than len(sententialForm)
-	if ar.position == len(ar.rule.sententialForm) {
+	if ar.position == len(ar.rule.SententialForm) {
 		return nil
 	}
-	return ar.rule.sententialForm[ar.position]
+	return ar.rule.SententialForm[ar.position]
 }
 
 func (ar augmentedRule) String() string {
 	rule := ar.rule.NonTerm + "="
-	for i, s := range ar.rule.sententialForm {
+	for i, s := range ar.rule.SententialForm {
 		if ar.position == i {
 			rule += "."
 		}
 		rule += s.String()
 	}
-	if ar.position == len(ar.rule.sententialForm) {
+	if ar.position == len(ar.rule.SententialForm) {
 		rule += "."
 	}
 
 	return rule
 }
 
-func (ar augmentedRule) StringWithLookahead(lookahead set[symbol]) string {
+func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol]) string {
 	rule := ar.rule.NonTerm + "="
-	for i, s := range ar.rule.sententialForm {
+	for i, s := range ar.rule.SententialForm {
 		if ar.position == i {
 			rule += "."
 		}
 		rule += s.String()
 	}
-	if ar.position == len(ar.rule.sententialForm) {
+	if ar.position == len(ar.rule.SententialForm) {
 		rule += "."
 	}
 
-	return fmt.Sprintf("%-*s%v", longestRule+4, rule, utils.MapToSetString(lookahead))
+	return fmt.Sprintf("%-*s%v", LongestRule+4, rule, utils.MapToSetString(lookahead))
 }

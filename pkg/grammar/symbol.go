@@ -8,56 +8,56 @@ import (
 
 type symbolType int
 
-// Note: even if a token is empty (epsilon), it must be passed to the parser.
+// Note: even if a token is empty (epsilonSymbol), it must be passed to the parser.
 // Note: end of file should also be passed as a token matching the endOfFile var
 const (
-	nonTerm symbolType = iota
-	token
-	epsilon
-	endOfInput
+	NonTermSymbol symbolType = iota
+	TokenSymbol
+	epsilonSymbol
+	endOfInputSymbol
 )
 
 var (
-	Epsilon    = symbol{symbolType: epsilon}
-	EndOfInput = symbol{symbolType: endOfInput}
+	Epsilon    = Symbol{SymbolType: epsilonSymbol}
+	EndOfInput = Symbol{SymbolType: endOfInputSymbol}
 )
 
 /*
-Represents a single symbol (can be either a non-terminal or a terminal/token)
+Represents a single Symbol (can be either a non-terminal or a terminal/token)
 */
-type symbol struct {
-	symbolType
-	name string
+type Symbol struct {
+	SymbolType symbolType
+	Name       string
 }
 
-func (s symbol) Hash() int {
-	return int(s.symbolType) + utils.HashStr(s.name)
+func (s Symbol) Hash() int {
+	return int(s.SymbolType) + utils.HashStr(s.Name)
 }
 
-func (s symbol) Equal(other symbol) bool {
+func (s Symbol) Equal(other Symbol) bool {
 	return reflect.DeepEqual(s, other)
 }
 
-func NewNonTerm(name string) *symbol {
-	return &symbol{
-		symbolType: nonTerm,
-		name:       name,
+func NewNonTerm(name string) *Symbol {
+	return &Symbol{
+		SymbolType: NonTermSymbol,
+		Name:       name,
 	}
 }
 
-func NewToken(name string) *symbol {
-	return &symbol{
-		symbolType: token,
-		name:       name,
+func NewToken(name string) *Symbol {
+	return &Symbol{
+		SymbolType: TokenSymbol,
+		Name:       name,
 	}
 }
 
-func (s symbol) String() string {
-	switch s.symbolType {
-	case epsilon:
+func (s Symbol) String() string {
+	switch s.SymbolType {
+	case epsilonSymbol:
 		return "ε"
-	case endOfInput:
+	case endOfInputSymbol:
 		return "$"
 	}
-	return s.name
+	return s.Name
 }

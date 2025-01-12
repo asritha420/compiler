@@ -7,40 +7,40 @@ import (
 )
 
 var (
-	longestRule = 0
+	LongestRule = 0
 )
 
-type rule struct {
+type Rule struct {
 	NonTerm        string
-	sententialForm []*symbol
+	SententialForm []*Symbol
 }
 
-func NewRule(nonTerm string, sententialForm ...*symbol) *rule {
-	newRule := &rule{
+func NewRule(nonTerm string, sententialForm ...*Symbol) *Rule {
+	newRule := &Rule{
 		NonTerm:        nonTerm,
-		sententialForm: sententialForm,
+		SententialForm: sententialForm,
 	}
 
 	len := len(newRule.String())
-	if len > longestRule {
-		longestRule = len
+	if len > LongestRule {
+		LongestRule = len
 	}
 
 	return newRule
 }
 
-func (r rule) String() string {
+func (r Rule) String() string {
 	output := r.NonTerm + "="
-	for _, s := range r.sententialForm {
+	for _, s := range r.SententialForm {
 		output += s.String()
 	}
 	return output
 }
 
-func (r rule) Hash() int {
-	return utils.HashStr(r.NonTerm) + utils.HashArr(r.sententialForm)
+func (r Rule) Hash() int {
+	return utils.HashStr(r.NonTerm) + utils.HashArr(r.SententialForm)
 }
 
-func (r rule) Equal(other rule) bool {
+func (r Rule) Equal(other Rule) bool {
 	return reflect.DeepEqual(r, other)
 }

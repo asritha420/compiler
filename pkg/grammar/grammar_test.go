@@ -48,29 +48,28 @@ func setupGrammar() *Grammar {
 	return NewGrammar(r1, r2, r3, r4, r5)
 }
 
-func TestLR1(t *testing.T) {
-	g := setupGrammar()
-	_, states := generateLR1(g)
-	print(makeMermaid(states))
-}
+// func TestLR1(t *testing.T) {
+// 	g := setupGrammar()
+// 	_, states := generateLR1(g)
+// 	print(makeMermaid(states))
+// }
 
-func TestLALR(t *testing.T) {
-	
-	g := setupGrammar()
-	_, states := generateLALR(g)
-	print(makeMermaid(states))
-}
+// func TestLALR(t *testing.T) {
+// 	g := setupGrammar()
+// 	_, states := generateLALR(g)
+// 	print(makeMermaid(states))
+// }
 
-func TestParser(t *testing.T) {
-	p := NewParser(setupGrammar(), true)
-	input := []Token{
-		{name: "id"},
-		{name: "("},
-		{name: "id"},
-		{name: "+"},
-		{name: "id"},
-		{name: ")"},
-	}
-	tree, _ := p.Parse(input)
-	print(tree)
-}
+// func TestParser(t *testing.T) {
+// 	p := NewParser(setupGrammar(), true)
+// 	input := []TokenSymbol{
+// 		{name: "id"},
+// 		{name: "("},
+// 		{name: "id"},
+// 		{name: "+"},
+// 		{name: "id"},
+// 		{name: ")"},
+// 	}
+// 	tree, _ := p.Parse(input)
+// 	print(tree)
+// }

@@ -1,4 +1,4 @@
-package grammar
+package parser
 
 import (
 	"fmt"
@@ -7,14 +7,15 @@ import (
 	"strings"
 
 	"asritha.dev/compiler/pkg/utils"
+	."asritha.dev/compiler/pkg/grammar"
 )
 
-type arLookaheadMap map[augmentedRule]set[symbol] //augmented rule -> lookahead
+type arLookaheadMap map[augmentedRule]utils.Set[Symbol] //augmented rule -> lookahead
 
 type lrAutomationState struct {
 	id             uint
 	arLookaheadMap
-	transitions    map[symbol]*lrAutomationState
+	transitions    map[Symbol]*lrAutomationState
 }
 
 func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomationState {
@@ -22,7 +23,7 @@ func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomatio
 	return &lrAutomationState{
 		id:             *id - 1,
 		arLookaheadMap: arLookaheadMap,
-		transitions:    make(map[symbol]*lrAutomationState),
+		transitions:    make(map[Symbol]*lrAutomationState),
 	}
 }
 
@@ -38,18 +39,18 @@ func (s *lrAutomationState) String() string {
 
 func (ar augmentedRule) getClosureRecursion(g *Grammar, closure arLookaheadMap) {
 	nextSymbol := ar.getNextSymbol()
-	if nextSymbol == nil || nextSymbol.symbolType != nonTerm {
+	if nextSymbol == nil || nextSymbol.SymbolType != NonTermSymbol {
 		return
 	}
 
-	sentential := ar.rule.sententialForm[ar.position+1:]
-	newLookahead := g.generateFirstSet(sentential...)
+	sentential := ar.rule.SententialForm[ar.position+1:]
+	newLookahead := g.GenerateFirstSet(sentential...)
 	if _, ok := newLookahead[Epsilon]; ok {
 		utils.AddToMap(closure[ar], newLookahead) //add lookahead of current ar if it can be finished with epsilon
 	}
 	delete(newLookahead, Epsilon)
 
-	for _, rule := range g.ruleNTMap[nextSymbol.name] {
+	for _, rule := range g.RuleNTMap[nextSymbol.Name] {
 		newAR := *NewAugmentedRule(rule, 0)
 		if _, ARExists := closure[newAR]; ARExists {
 			utils.AddToMap(newLookahead, closure[newAR])
@@ -66,8 +67,8 @@ func getClosure(g *Grammar, initial arLookaheadMap) {
 	}
 }
 
-func getTransitions(g *Grammar, core arLookaheadMap) map[symbol]arLookaheadMap {
-	transitions := make(map[symbol]arLookaheadMap)
+func getTransitions(g *Grammar, core arLookaheadMap) map[Symbol]arLookaheadMap {
+	transitions := make(map[Symbol]arLookaheadMap)
 
 	for ar, lookahead := range core {
 		nextSymbol := ar.getNextSymbol()
