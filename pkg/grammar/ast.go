@@ -1,9 +1,15 @@
 package grammar
 
-type grammarASTType int
+type grammarAST interface {}
 
-const (
-	token grammarASTType = iota
-	nonTerm
+type kleenStar struct {
+	child grammarAST
+}
+
+type optional struct {
+	child grammarAST
+}
+
+type oneOrMore struct {
 	
-)
+}
