@@ -19,16 +19,19 @@ idChar = "letter" | "digit" | "_";
 identifier = idChar | idChar, identifier;
 string = epsilon | strChar, string;
 token = "\"" string "\"";
-S = space | epsilon;
+separator = space | epsilon;
 
 term = token | identifier | "(", rhs, ")";
-sTerm = S, term, S;
-concatenation = sTerm | sTerm, ",", concatenation;
+sTerm = separator, term, separator;
+
+factor = sTerm | sTerm, "?", separator | sTerm, "*", separator | sTerm, "+", separator;
+
+concatenation = factor | factor, ",", concatenation;
 alternation = concatenation | concatenation, "|", alternation;
 
 lhs = identifier;
 rhs = alternation;
 
-rule = S, lhs, S, "=", rhs, ";", S;
+rule = separator, lhs, separator, "=", rhs, ";", separator;
 rules = rule | rule, rules;
 ```

@@ -160,20 +160,29 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 }
 
 /*
-Compresses the parse tree by:
-- removing any children in the remove list
-- compressing all children
-- removing any children that have no literal and no children
+Removes any node with a name in the removeSet
 */
-func (node *parseTreeNode) Compress(removeList utils.Set[string]) {
+func (node *parseTreeNode) Remove(removeSet utils.Set[string]) {
 	for i := 0; i < len(node.children); i++ {
 		child := node.children[i]
-		if _, ok := removeList[child.name]; ok {
+		if _, ok := removeSet[child.name]; ok {
 			node.children = utils.Remove(node.children, i)
 			i--
 			continue
 		}
-		child.Compress(removeList)
+		child.Remove(removeSet)
+	}
+}
+
+/*
+Compresses the parse tree by:
+- compressing all children
+- removing any children that have no literal and no children
+*/
+func (node *parseTreeNode) Compress() {
+	for i := 0; i < len(node.children); i++ {
+		child := node.children[i]
+		child.Compress()
 		if child.literal == "" && len(child.children) == 0 {
 			node.children = utils.Remove(node.children, i)
 			i--
@@ -181,6 +190,9 @@ func (node *parseTreeNode) Compress(removeList utils.Set[string]) {
 	}
 }
 
+/*
+Shortens the parse tree by cutting out nodes that only have 1 child.
+*/
 func Shorten(node **parseTreeNode) {
 	for i := range (*node).children {
 		Shorten(&(*node).children[i])
@@ -188,6 +200,20 @@ func Shorten(node **parseTreeNode) {
 	if len((*node).children) == 1 {
 		*node = (*node).children[0]
 	}
+}
+
+/*
+Recursively constructs the literal represented by a node
+*/
+func (node *parseTreeNode) GetLiteral() string {
+	if len(node.children) == 0 {
+		return node.literal
+	}
+	out := ""
+	for _, n := range node.children {
+		out += n.GetLiteral()
+	}
+	return out
 }
 
 func (p parser) MakeGraph(graphviz bool) string {

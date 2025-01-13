@@ -68,9 +68,10 @@ func GenerateGrammar() *Grammar {
 	identifier := NewNonTerm("identifier")
 	str := NewNonTerm("string")
 	token := NewNonTerm("token")
-	S := NewNonTerm("S")
+	separator := NewNonTerm("separator")
 	term := NewNonTerm("term")
 	sTerm := NewNonTerm("sTerm")
+	factor := NewNonTerm("factor")
 	concatenation := NewNonTerm("concatenation")
 	alternation := NewNonTerm("alternation")
 	lhs := NewNonTerm("lhs")
@@ -125,9 +126,9 @@ func GenerateGrammar() *Grammar {
 	//token
 	tok1 := NewRule("token", doubleQuote, str, doubleQuote)
 
-	//space
-	space1 := NewRule("S", space)
-	space2 := NewRule("S", &Epsilon)
+	//separator
+	se1 := NewRule("separator", space)
+	se2 := NewRule("separator", &Epsilon)
 
 	//term
 	t1 := NewRule("term", token)
@@ -135,11 +136,17 @@ func GenerateGrammar() *Grammar {
 	t3 := NewRule("term", leftParen, rhs, rightParen)
 
 	//sTerm
-	st1 := NewRule("sTerm", S, term, S)
+	st1 := NewRule("sTerm", separator, term, separator)
+
+	//factor
+	f1 := NewRule("factor", sTerm)
+	f2 := NewRule("factor", sTerm, question, separator)
+	f3 := NewRule("factor", sTerm, asterisk, separator)
+	f4 := NewRule("factor", sTerm, plus, separator)
 
 	//concatenation
-	c1 := NewRule("concatenation", sTerm)
-	c2 := NewRule("concatenation", sTerm, comma, concatenation)
+	c1 := NewRule("concatenation", factor)
+	c2 := NewRule("concatenation", factor, comma, concatenation)
 
 	//alternation
 	a1 := NewRule("alternation", concatenation)
@@ -149,7 +156,7 @@ func GenerateGrammar() *Grammar {
 	lhs1 := NewRule("lhs", identifier)
 	rhs1 :=  NewRule("rhs", alternation)
 
-	r1 := NewRule("rule", S, lhs, S, equal, rhs, semicolon, S)
+	r1 := NewRule("rule", separator, lhs, separator, equal, rhs, semicolon, separator)
 	rs1 := NewRule("rules", rule)
 	rs2 := NewRule("rules", rule, rules)
 
@@ -164,9 +171,10 @@ func GenerateGrammar() *Grammar {
 		id1,id2,
 		str1,str2,
 		tok1,
-		space1,space2,
+		se1,se2,
 		t1,t2,t3,
 		st1,
+		f1,f2,f3,f4,
 		c1,c2,
 		a1,a2,
 		lhs1,rhs1,
@@ -181,13 +189,17 @@ func main() {
 
 	p := NewParser(g, true)
 
-	tokens, err := gs.Scan("P=E ;\n\nE=(lol);\nR=hello | test, y\n;")
+	tokens, err := gs.Scan("P=E ;\n\nE=(lol)*;\nR=hello | test, y\n;")
 	if err != nil {
 		log.Fatal(err)
 	}
-	println(p.MakeGraph(true))
 	tree, _ := p.Parse(tokens)
-	tree.Compress(utils.Set[string]{"S":struct{}{}})
+	tree.Remove(utils.Set[string]{
+		"separator":struct{}{},
+		// "=":struct{}{},
+		// ";":struct{}{},
+	})
+	tree.Compress()
 	Shorten(&tree)
-	fmt.Println(tree)
+	fmt.Println(tree.GetLiteral())
 }
