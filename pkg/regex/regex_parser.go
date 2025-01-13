@@ -30,10 +30,8 @@ type RegexParser struct {
 	curr   int // current index of unscanned token
 }
 
-// scans and returns the next token
-func (rp *RegexParser) scanToken() *RegexToken {
-	rp.curr++
-	return rp.tokens[rp.curr-1]
+func (rp *RegexParser) lookAhead() *RegexToken {
+	return rp.tokens[rp.curr]
 }
 
 func (rp *RegexParser) putBackToken() {
@@ -41,15 +39,22 @@ func (rp *RegexParser) putBackToken() {
 }
 
 func (rp *RegexParser) Parse() *RExpr {
-
+	return rp.parseAlt()
 }
 
-func (rp *RegexParser) ParseAlt() *RExpr {
-	return &Alternation{}
+func (rp *RegexParser) parseAlt() *RExpr {
+	return rp.ParseConcat()
 }
 
 func (rp *RegexParser) ParseAltPrime() *RExpr {
-	return &Alternation{}
+	if rp.lookAhead().RegexTokenType == pipe {
+		rp.curr++ // consume
+		return &Alternation{
+			left:
+		}
+	} else {
+
+	}
 }
 
 func (rp *RegexParser) ParseConcat() *RExpr {
