@@ -6,6 +6,7 @@ import (
 
 	. "asritha.dev/compiler/pkg/grammar"
 	. "asritha.dev/compiler/pkg/scannergenerator"
+	"asritha.dev/compiler/pkg/utils"
 )
 
 var (
@@ -155,6 +156,37 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 
 		stack = stack[0:newStackLen]
 		stack = append(stack, p.gotoTable[stack[newStackLen-1]][nextAction.reduce.NonTerm])
+	}
+}
+
+/*
+Compresses the parse tree by:
+- removing any children in the remove list
+- compressing all children
+- removing any children that have no literal and no children
+*/
+func (node *parseTreeNode) Compress(removeList utils.Set[string]) {
+	for i := 0; i < len(node.children); i++ {
+		child := node.children[i]
+		if _, ok := removeList[child.name]; ok {
+			node.children = utils.Remove(node.children, i)
+			i--
+			continue
+		}
+		child.Compress(removeList)
+		if child.literal == "" && len(child.children) == 0 {
+			node.children = utils.Remove(node.children, i)
+			i--
+		}
+	}
+}
+
+func Shorten(node **parseTreeNode) {
+	for i := range (*node).children {
+		Shorten(&(*node).children[i])
+	}
+	if len((*node).children) == 1 {
+		*node = (*node).children[0]
 	}
 }
 

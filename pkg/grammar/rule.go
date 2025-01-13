@@ -21,7 +21,8 @@ func NewRule(nonTerm string, sententialForm ...*Symbol) *Rule {
 func (r *Rule) removeEpsilon() {
 	for i := 0; i < len(r.SententialForm); i++ {
 		if *r.SententialForm[i] == Epsilon {
-			r.SententialForm = append(r.SententialForm[:i], r.SententialForm[i+1:]...)
+			r.SententialForm = utils.Remove(r.SententialForm, i)
+			i--;
 		}
 	}
 }

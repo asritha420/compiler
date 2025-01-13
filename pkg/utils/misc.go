@@ -16,6 +16,10 @@ func FastRemove[T any](s []T, i int) []T {
 	return s[:len(s)-1]
 }
 
+func Remove[T any](s []T, i int) []T {
+	return append(s[:i], s[i+1:]...)
+}
+
 func HashStr(s string) int {
 	h := fnv.New32a()
 	h.Write([]byte(s))

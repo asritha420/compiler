@@ -7,6 +7,7 @@ import (
 	. "asritha.dev/compiler/pkg/grammar"
 	. "asritha.dev/compiler/pkg/parser"
 	. "asritha.dev/compiler/pkg/scannergenerator"
+	"asritha.dev/compiler/pkg/utils"
 )
 
 func GenerateGrammarScanner() *Scanner {
@@ -186,5 +187,7 @@ func main() {
 	}
 	println(p.MakeGraph(true))
 	tree, _ := p.Parse(tokens)
+	tree.Compress(utils.Set[string]{"S":struct{}{}})
+	Shorten(&tree)
 	fmt.Println(tree)
 }
