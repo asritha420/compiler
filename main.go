@@ -78,6 +78,7 @@ func GenerateGrammar() *Grammar {
 	rhs := NewNonTerm("rhs")
 	rule := NewNonTerm("rule")
 	rules := NewNonTerm("rules")
+	tokenCap := NewNonTerm("tokenCap")
 
 	//rules
 	//symbol
@@ -124,7 +125,8 @@ func GenerateGrammar() *Grammar {
 	str2 := NewRule("string", strChar, str)
 
 	//token
-	tok1 := NewRule("token", doubleQuote, str, doubleQuote)
+	tc1 := NewRule("tokenCap", doubleQuote)
+	tok1 := NewRule("token", tokenCap, str, tokenCap)
 
 	//separator
 	se1 := NewRule("separator", space)
@@ -170,7 +172,7 @@ func GenerateGrammar() *Grammar {
 		ic1,ic2,ic3,
 		id1,id2,
 		str1,str2,
-		tok1,
+		tc1, tok1,
 		se1,se2,
 		t1,t2,t3,
 		st1,
@@ -189,17 +191,23 @@ func main() {
 
 	p := NewParser(g, true)
 
-	tokens, err := gs.Scan("P=E ;\n\nE=(lol)*;\nR=hello | test, y\n;")
+	tokens, err := gs.Scan("P=E ;\n\nE=(\"te\\\"st\",lol)*;\nR=hello | test, y\n;")
 	if err != nil {
 		log.Fatal(err)
 	}
 	tree, _ := p.Parse(tokens)
-	tree.Remove(utils.Set[string]{
-		"separator":struct{}{},
-		// "=":struct{}{},
-		// ";":struct{}{},
-	})
-	tree.Compress()
-	Shorten(&tree)
+	tree = tree.Format(
+		utils.Set[string]{
+			"separator":struct{}{},
+			"=":struct{}{},
+			";":struct{}{},
+			"tokenCap":struct{}{},
+		},
+		utils.Set[string]{
+			"token":struct{}{},
+			"identifier":struct{}{},
+		},
+		true, true,
+	)
 	fmt.Println(tree.GetLiteral())
 }

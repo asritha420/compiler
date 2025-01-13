@@ -160,46 +160,40 @@ func (p parser) Parse(input []Token) (*parseTreeNode, error) {
 }
 
 /*
-Removes any node with a name in the removeSet
+Formats the parse tree by using the provided sets to remove extra nodes.
+
+Note: order of ops goes removeSet > format children > compressSet > shorten
 */
-func (node *parseTreeNode) Remove(removeSet utils.Set[string]) {
+func (node *parseTreeNode) Format(removeSet utils.Set[string], compressSet utils.Set[string], removeEmpty bool, shorten bool) *parseTreeNode {
+	if _, ok := removeSet[node.name]; ok {
+		return nil
+	}
+
 	for i := 0; i < len(node.children); i++ {
-		child := node.children[i]
-		if _, ok := removeSet[child.name]; ok {
+		child := node.children[i].Format(removeSet, compressSet, removeEmpty, shorten)
+		if child == nil {
 			node.children = utils.Remove(node.children, i)
 			i--
-			continue
-		}
-		child.Remove(removeSet)
-	}
-}
-
-/*
-Compresses the parse tree by:
-- compressing all children
-- removing any children that have no literal and no children
-*/
-func (node *parseTreeNode) Compress() {
-	for i := 0; i < len(node.children); i++ {
-		child := node.children[i]
-		child.Compress()
-		if child.literal == "" && len(child.children) == 0 {
-			node.children = utils.Remove(node.children, i)
-			i--
+		} else {
+			node.children[i] = child
 		}
 	}
-}
 
-/*
-Shortens the parse tree by cutting out nodes that only have 1 child.
-*/
-func Shorten(node **parseTreeNode) {
-	for i := range (*node).children {
-		Shorten(&(*node).children[i])
+	if node.literal == "" && len(node.children) == 0 {
+		return nil
 	}
-	if len((*node).children) == 1 {
-		*node = (*node).children[0]
+
+	if _, ok := compressSet[node.name]; ok {
+		node.literal = node.GetLiteral()
+		node.children = node.children[:0]
+		return node
 	}
+
+	if shorten && len(node.children) == 1 {
+		return node.children[0]
+	}
+
+	return node
 }
 
 /*
