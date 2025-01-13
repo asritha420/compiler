@@ -77,10 +77,14 @@ func (node *parseTreeNode) GetLiteral() string {
 	return out
 }
 
-func Convert[T any](node *parseTreeNode, conversionFuncs map[string]func(node *parseTreeNode, children []T) T, defaultFunc func(node *parseTreeNode, children []T) T ) T {
-	children := make([]T, len(node.children))
+func Convert[T any](node *parseTreeNode, conversionFuncs map[string]func(node *parseTreeNode, children []*T) (*T, error), defaultFunc func(node *parseTreeNode, children []*T) (*T, error)) (*T, error) {
+	children := make([]*T, len(node.children))
 	for i, child := range node.children {
-		children[i] = Convert(child, conversionFuncs, defaultFunc)
+		ret, err := Convert(child, conversionFuncs, defaultFunc)
+		if err != nil {
+			return nil, err
+		}
+		children[i] = ret
 	}
 
 	if conversionFunc, ok := conversionFuncs[node.name]; ok {

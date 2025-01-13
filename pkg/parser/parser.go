@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	. "asritha.dev/compiler/pkg/grammar"
-	. "asritha.dev/compiler/pkg/scannergenerator"
+	"asritha.dev/compiler/pkg/grammar"
+	"asritha.dev/compiler/pkg/scannergenerator"
 )
 
 var (
@@ -14,11 +14,11 @@ var (
 
 type action struct {
 	shift  *lrAutomationState
-	reduce *Rule
+	reduce *grammar.Rule
 	accept bool
 }
 
-func newReduce(r *Rule) action {
+func newReduce(r *grammar.Rule) action {
 	return action{reduce: r}
 }
 
@@ -27,15 +27,15 @@ func newShift(s *lrAutomationState) action {
 }
 
 type parser struct {
-	*Grammar
+	*grammar.Grammar
 	useLALR     bool
 	kernel      *lrAutomationState
 	states      []*lrAutomationState
 	gotoTable   map[*lrAutomationState]map[string]*lrAutomationState
-	actionTable map[*lrAutomationState]map[Symbol]action
+	actionTable map[*lrAutomationState]map[grammar.Symbol]action
 }
 
-func NewParser(g *Grammar, useLALR bool) *parser {
+func NewParser(g *grammar.Grammar, useLALR bool) *parser {
 	var kernel *lrAutomationState
 	var states []*lrAutomationState
 	if useLALR {
@@ -49,7 +49,7 @@ func NewParser(g *Grammar, useLALR bool) *parser {
 		kernel:      kernel,
 		states:      states,
 		gotoTable:   make(map[*lrAutomationState]map[string]*lrAutomationState),
-		actionTable: make(map[*lrAutomationState]map[Symbol]action),
+		actionTable: make(map[*lrAutomationState]map[grammar.Symbol]action),
 	}
 	p.makeTables()
 
@@ -61,7 +61,7 @@ func (p parser) makeTables() {
 
 	for _, s := range p.states {
 		p.gotoTable[s] = make(map[string]*lrAutomationState)
-		p.actionTable[s] = make(map[Symbol]action)
+		p.actionTable[s] = make(map[grammar.Symbol]action)
 
 		for ar, lookahead := range s.arLookaheadMap {
 			nextSymbol := ar.getNextSymbol()
@@ -70,17 +70,17 @@ func (p parser) makeTables() {
 					p.actionTable[s][symbol] = newReduce(ar.Rule)
 				}
 				if ar == endAR {
-					p.actionTable[s][EndOfInput] = accept
+					p.actionTable[s][grammar.EndOfInput] = accept
 				}
 				continue
 			}
 
-			if nextSymbol.SymbolType == TokenSymbol{
+			if nextSymbol.SymbolType == grammar.TokenSymbol{
 				p.actionTable[s][*nextSymbol] = newShift(s.transitions[*nextSymbol])
 				continue
 			}
 
-			if nextSymbol.SymbolType == NonTermSymbol {
+			if nextSymbol.SymbolType == grammar.NonTermSymbol {
 				p.gotoTable[s][nextSymbol.Name] = s.transitions[*nextSymbol]
 			}
 
@@ -89,19 +89,19 @@ func (p parser) makeTables() {
 	}
 }
 
-func (p parser) Parse(input []Token) (*parseTreeNode, error) {
+func (p parser) Parse(input []scannergenerator.Token) (*parseTreeNode, error) {
 	stack := []*lrAutomationState{p.kernel}
 	treeStack := make([]*parseTreeNode, 0)
 
 	for {
 		stackTop := stack[len(stack)-1] //top of stack
-		var firstInput Token            // first input
-		var firstInputSymbol Symbol     // first input as symbol (may be EndOfInput)
+		var firstInput scannergenerator.Token            // first input
+		var firstInputSymbol grammar.Symbol     // first input as symbol (may be EndOfInput)
 		if len(input) == 0 {
-			firstInputSymbol = EndOfInput
+			firstInputSymbol = grammar.EndOfInput
 		} else {
 			firstInput = input[0]
-			firstInputSymbol = *NewToken(firstInput.Name)
+			firstInputSymbol = *grammar.NewToken(firstInput.Name)
 		}
 
 		nextAction, ok := p.actionTable[stackTop][firstInputSymbol]

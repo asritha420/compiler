@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"asritha.dev/compiler/pkg/utils"
-	."asritha.dev/compiler/pkg/grammar"
+	"asritha.dev/compiler/pkg/grammar"
 )
 
-type arLookaheadMap map[augmentedRule]utils.Set[Symbol] //augmented rule -> lookahead
+type arLookaheadMap map[augmentedRule]utils.Set[grammar.Symbol] //augmented rule -> lookahead
 
 type lrAutomationState struct {
 	id             uint
 	arLookaheadMap
-	transitions    map[Symbol]*lrAutomationState
+	transitions    map[grammar.Symbol]*lrAutomationState
 }
 
 func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomationState {
@@ -23,7 +23,7 @@ func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomatio
 	return &lrAutomationState{
 		id:             *id - 1,
 		arLookaheadMap: arLookaheadMap,
-		transitions:    make(map[Symbol]*lrAutomationState),
+		transitions:    make(map[grammar.Symbol]*lrAutomationState),
 	}
 }
 
@@ -45,18 +45,18 @@ func (s *lrAutomationState) String() string {
 	return fmt.Sprintf("State %d\n%s", s.id, strings.Join(rules, "\n"))
 }
 
-func (ar augmentedRule) getClosureRecursion(g *Grammar, closure arLookaheadMap) {
+func (ar augmentedRule) getClosureRecursion(g *grammar.Grammar, closure arLookaheadMap) {
 	nextSymbol := ar.getNextSymbol()
-	if nextSymbol == nil || nextSymbol.SymbolType != NonTermSymbol {
+	if nextSymbol == nil || nextSymbol.SymbolType != grammar.NonTermSymbol {
 		return
 	}
 
 	sentential := ar.SententialForm[ar.position+1:]
 	newLookahead := g.GenerateFirstSet(sentential...)
-	if _, ok := newLookahead[Epsilon]; ok {
+	if _, ok := newLookahead[grammar.Epsilon]; ok {
 		utils.AddToMap(closure[ar], newLookahead) //add lookahead of current ar if it can be finished with epsilon
 	}
-	delete(newLookahead, Epsilon)
+	delete(newLookahead, grammar.Epsilon)
 
 	for _, rule := range g.RuleNTMap[nextSymbol.Name] {
 		newAR := *NewAugmentedRule(rule, 0)
@@ -69,14 +69,14 @@ func (ar augmentedRule) getClosureRecursion(g *Grammar, closure arLookaheadMap) 
 	}
 }
 
-func getClosure(g *Grammar, initial arLookaheadMap) {
+func getClosure(g *grammar.Grammar, initial arLookaheadMap) {
 	for ar := range initial {
 		ar.getClosureRecursion(g, initial)
 	}
 }
 
-func getTransitions(g *Grammar, core arLookaheadMap) map[Symbol]arLookaheadMap {
-	transitions := make(map[Symbol]arLookaheadMap)
+func getTransitions(g *grammar.Grammar, core arLookaheadMap) map[grammar.Symbol]arLookaheadMap {
+	transitions := make(map[grammar.Symbol]arLookaheadMap)
 
 	for ar, lookahead := range core {
 		nextSymbol := ar.getNextSymbol()
@@ -107,11 +107,11 @@ func findState(target arLookaheadMap, states []*lrAutomationState) *lrAutomation
 	return nil
 }
 
-func generateLR1(g *Grammar) (*lrAutomationState, []*lrAutomationState) {
+func generateLR1(g *grammar.Grammar) (*lrAutomationState, []*lrAutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.FirstRule, 0): {EndOfInput: struct{}{}},
+		*NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 
@@ -150,11 +150,11 @@ func findStateCore(target arLookaheadMap, states []*lrAutomationState) *lrAutoma
 /*
 Basically LR1 but merges states that have the same core (same augmented rules not including lookahead)
 */
-func generateLALR(g *Grammar) (*lrAutomationState, []*lrAutomationState) {
+func generateLALR(g *grammar.Grammar) (*lrAutomationState, []*lrAutomationState) {
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.FirstRule, 0): {EndOfInput: struct{}{}},
+		*NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 

@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"asritha.dev/compiler/pkg/utils"
-	."asritha.dev/compiler/pkg/grammar"
+	"asritha.dev/compiler/pkg/grammar"
 )
 
 type augmentedRule struct {
-	*Rule
+	*grammar.Rule
 	position int
 }
 
-func NewAugmentedRule(r *Rule, position int) *augmentedRule {
+func NewAugmentedRule(r *grammar.Rule, position int) *augmentedRule {
 	return &augmentedRule{
 		Rule:     r,
 		position: position,
@@ -22,7 +22,7 @@ func NewAugmentedRule(r *Rule, position int) *augmentedRule {
 /*
 Returns the next symbol (symbol to right of position) in an augmented rule or nil if there is no next symbol
 */
-func (ar augmentedRule) getNextSymbol() *Symbol {
+func (ar augmentedRule) getNextSymbol() *grammar.Symbol {
 	//Note: position should NOT be more than len(sententialForm)
 	if ar.position == len(ar.SententialForm) {
 		return nil
@@ -45,7 +45,7 @@ func (ar augmentedRule) String() string {
 	return rule
 }
 
-func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[Symbol], minSpacing int) string {
+func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[grammar.Symbol], minSpacing int) string {
 	rule := ar.NonTerm + " ="
 	for i, s := range ar.SententialForm {
 		if ar.position == i {
