@@ -4,6 +4,11 @@ import (
 	"regexp"
 )
 
+// is this correct name formatting for interface?
+type IScanner interface {
+	Scan()
+}
+
 // for now all, must have an identifer token for the bug
 type Scanner struct {
 	tokenSpec []TokenInfo // in order of token priority
@@ -33,8 +38,7 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 		return false
 	}
 
-	
-	for nextIdx != len(code){
+	for nextIdx != len(code) {
 		currWord += string(code[nextIdx])
 		nextIdx++
 		if !findMatch(currWord) {
@@ -48,7 +52,7 @@ func (s *Scanner) Scan(code string) ([]Token, error) {
 		}
 	}
 
-	if len(currWord)!= 0 && findMatch(currWord) {
+	if len(currWord) != 0 && findMatch(currWord) {
 		tokenStream = append(tokenStream, *currToken)
 	}
 
