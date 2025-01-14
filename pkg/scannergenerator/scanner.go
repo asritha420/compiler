@@ -5,12 +5,12 @@ import (
 )
 
 // is this correct name formatting for interface?
-type IScanner interface {
+type Scanner interface {
 	Scan()
 }
 
 // for now all, must have an identifer token for the bug
-type Scanner struct {
+type ScannerGen struct {
 	tokenSpec []TokenInfo // in order of token priority
 }
 
