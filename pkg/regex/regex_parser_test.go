@@ -3,20 +3,36 @@ package regex
 import "testing"
 
 // should test error cases as well
+// TODO: use pointers for some of these nodes?
 var (
-	regex1    = "a*"
-	regex1AST = KleeneStarNode{
-		left: LiteralNode('a'),
+	regex1            Regex = "a*"
+	expectedRegex1AST       = KleeneStarNode{
+		left: CharacterNode('a'),
 	}
 
-	regex2    = "[abcd]"
-	regex2AST = CharacterClassNode([]rune{'a', 'b', 'c', 'd'})
+	regex2            Regex = "[abcd]"
+	expectedRegex2AST       = CharacterClassNode([]rune{'a', 'b', 'c', 'd'})
 
-	regex3    = "^[a-zA-Z]?"
-	regex3AST = CharacterClassNode([]rune{})
+	regex3            Regex = "[a-zA-Z]?"
+	expectedRegex3AST       = ConcatenationNode{
+		left: CharacterClassNode(append(lowercaseLetters(), uppercaseLetters()...)),
+		right: KleeneStarNode{
+			left: CharacterClassNode(append(lowercaseLetters(), uppercaseLetters()...)),
+		},
+	}
 
-	regex4 = "r(e|t*?t)[^hel-p]*"
+	_      Regex = "^[a-zA-Z]?"
+	regex6 Regex = "[e-]"
 )
 
 func TestRegexParse(t *testing.T) {
+
+	regex1AST, err := regex1.GetAST()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if regex1AST != expectedRegex1AST {
+		t.Errorf("invalid")
+	}
 }
