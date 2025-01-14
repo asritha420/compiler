@@ -196,18 +196,5 @@ func main() {
 		log.Fatal(err)
 	}
 	tree, _ := p.Parse(tokens)
-	tree = tree.Format(
-		utils.Set[string]{
-			"separator":struct{}{},
-			"=":struct{}{},
-			";":struct{}{},
-			"tokenCap":struct{}{},
-		},
-		utils.Set[string]{
-			"token":struct{}{},
-			"identifier":struct{}{},
-		},
-		true, true,
-	)
 	fmt.Println(tree.GetLiteral())
 }
