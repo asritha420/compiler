@@ -1,4 +1,7 @@
-TODO: move this file 
+TODO: move this file
+// TODO: what should be public and what should not in the parser
+// TODO: custom error
+// TODO: add escape characters 
 ```
 Regex         -> Alt
 

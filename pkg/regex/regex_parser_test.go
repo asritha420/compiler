@@ -2,42 +2,21 @@ package regex
 
 import "testing"
 
+// should test error cases as well
 var (
-	regex1String = "a*"
-	regex1Tokens = []RegexToken{
-		{
-			RegexTokenType: char,
-		},
+	regex1    = "a*"
+	regex1AST = KleeneStarNode{
+		left: LiteralNode('a'),
 	}
-	regex1AST = KleeneStar{
-		left: Const{'a'},
-	}
-	regexString2 = "[abcd]"
-	regex2AST    = Alternation{
-		left: Const{'a'},
-	}
-	regexString3 = "^[a-zA-Z]?"
-	// should test error cases as well
-	omsFunkyRegex    = "r(e|t*?t)[^hel-p]*"
-	omsFunkyRegexAST = Concatenation{
-		left: Const{'r'},
-		right: Alternation{
-			left: Const{'e'},
-			right: KleeneStar{
-				left: Const{'t'},
-			},
-		},
-	}
-)
 
-/*
-[asdf]
-	alt
-	alt f
-  alt d
-alt s
-alt a
-*/
+	regex2    = "[abcd]"
+	regex2AST = CharacterClassNode([]rune{'a', 'b', 'c', 'd'})
+
+	regex3    = "^[a-zA-Z]?"
+	regex3AST = CharacterClassNode([]rune{})
+
+	regex4 = "r(e|t*?t)[^hel-p]*"
+)
 
 func TestRegexParse(t *testing.T) {
 }

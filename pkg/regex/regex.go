@@ -2,15 +2,19 @@ package regex
 
 type Regex string
 
-func (r *Regex) GetAST() {
+func (r Regex) GetAST() (Node, error) {
 
-}
+	parser := regexParser{
+		// TODO: fix this dep
+		regex: []rune(r),
+		curr:  0,
+	}
 
-type regexParser struct {
-	regex []rune
-	curr  int
-}
+	AST, err := parser.parse()
 
-func Parse(regex []rune) {
+	if err != nil {
+		return nil, err
+	}
 
+	return AST, nil
 }
