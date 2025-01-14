@@ -124,7 +124,7 @@ func (rp *regexParser) parseRepeat() (Node, error) {
 		node = NewConcatenationNode(node, NewKleeneStarNode(node))
 	case '?':
 		// x? can be rewritten as (s | EPSILON)
-		node = NewAlternationNode(node, NewLiteralNode(0))
+		node = NewAlternationNode(node, NewCharacterNode(0))
 	}
 
 	return node, nil
@@ -151,7 +151,7 @@ func (rp *regexParser) parseGroup() (Node, error) {
 	} else if slices.Contains(firstSets["CharRange"], rp.lookAhead()) { // CharRange
 		node, err = rp.parseCharRange()
 	} else { // Char
-		node, err = rp.parseLiteral()
+		node, err = rp.parseCharacter()
 	}
 
 	if err != nil {
@@ -205,7 +205,7 @@ func (rp *regexParser) parseCharRangeBody() (Node, error) {
 	isRunes := make([]rune, 0)
 	isRunes = traverseCharRangeAtomOneOrMore(node, isRunes)
 
-	notRunes := FindDifferenceSlices(anyValidChar, isRunes)
+	notRunes := FindDifferenceSlices(anyChar, isRunes)
 
 	return NewCharacterClassNode(notRunes), nil
 }
@@ -215,8 +215,8 @@ func traverseCharRangeAtomOneOrMore(node Node, runes []rune) []rune {
 	if altNode, ok := node.(AlternationNode); ok {
 		traverseCharRangeAtomOneOrMore(altNode.left, runes)
 		traverseCharRangeAtomOneOrMore(altNode.right, runes)
-	} else if literalNode, ok := node.(LiteralNode); ok {
-		runes = append(runes, rune(literalNode))
+	} else if characterNode, ok := node.(CharacterNode); ok {
+		runes = append(runes, rune(characterNode))
 	}
 	return runes
 }
@@ -234,7 +234,7 @@ func FindDifferenceSlices(slice1 []rune, slice2 []rune) []rune {
 
 // CharRangeAtom -> Char ("-" Char)?
 func (rp *regexParser) parseCharRangeAtom() (Node, error) {
-	startLiteral, err := rp.parseLiteral()
+	startLiteral, err := rp.parseCharacter()
 	if err != nil {
 		return nil, err
 	}
@@ -251,18 +251,18 @@ func (rp *regexParser) parseCharRangeAtom() (Node, error) {
 		return nil, errors.New(`nothing after "-"`)
 	} // TODO: handle error, is 0 the correct one?
 
-	indexOfStarChar := slices.Index(anyValidChar, rune(startLiteral))
-	indexOfEndChar := slices.Index(anyValidChar, endChar) // TODO: better way to do this?
+	indexOfStarChar := slices.Index(anyChar, rune(startLiteral))
+	indexOfEndChar := slices.Index(anyChar, endChar) // TODO: better way to do this?
 
-	characterClass := anyValidChar[indexOfStarChar : indexOfEndChar+1]
+	characterClass := anyChar[indexOfStarChar : indexOfEndChar+1]
 	return NewCharacterClassNode(characterClass), nil
 }
 
 // Char -> ANY_VALID_CHAR
-func (rp *regexParser) parseLiteral() (LiteralNode, error) {
+func (rp *regexParser) parseCharacter() (CharacterNode, error) {
 	if slices.Contains(firstSets["Char"], rp.lookAhead()) {
 		rp.curr++ // consume the char
-		return NewLiteralNode(rp.regex[rp.curr]), nil
+		return NewCharacterNode(rp.regex[rp.curr]), nil
 	}
 	return 0, errors.New("invalid char") // todo: fix error
 }
