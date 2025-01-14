@@ -18,3 +18,20 @@ CharRangeAtom -> Char ("-" Char)?
 
 Char          -> ANY_VALID_CHAR
 ```
+
+```
+note that v represents any valid char 
+FIRST SETS: 
+Regex: (, [, v
+Alt: (, [, v
+AltPrime: | 
+Concat: (, [, v
+ConcatPrime: (, [, v
+Repeat: (, [, v
+Quantifier: *, +, ? 
+Group: (, [, v
+CharRange: [
+CharRangeBody: ^, v
+CharRangeAtom: v 
+Char: v
+```
