@@ -42,6 +42,14 @@ func NewConst(value rune) Const {
 	return Const{value}
 }
 
+type ConstRange struct {
+	values []rune
+}
+
+func NewConstRange(values []rune) ConstRange {
+	return ConstRange{values}
+}
+
 type Alternation struct {
 	left  RExpr
 	right RExpr
