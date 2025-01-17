@@ -1,6 +1,7 @@
 package regex
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -70,6 +71,12 @@ func TestRegexParse(t *testing.T) {
 	regex2AST, err := notRegex2.GetAST()
 	if err != nil {
 		t.Errorf(err.Error())
+	}
+
+	test := []rune(regex2AST.(CharacterClassNode))
+
+	for _, i := range test {
+		fmt.Printf("%c", i)
 	}
 
 	if !reflect.DeepEqual(regex2AST, expectedNotRegex2) {

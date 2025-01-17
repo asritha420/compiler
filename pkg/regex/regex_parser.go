@@ -251,10 +251,12 @@ func (rp *regexParser) parseCharacter() (CharacterNode, error) {
 // TODO: is this best way to store ast?
 // TODO: get rid of any nested ifs
 // move to bottom, add comment
+
+// TODO: this needs to handle CharacterClassNode
 func traverseCharRangeAtomOneOrMore(node Node, runes []rune) []rune {
 	if altNode, ok := node.(AlternationNode); ok {
-		traverseCharRangeAtomOneOrMore(altNode.left, runes)
-		traverseCharRangeAtomOneOrMore(altNode.right, runes)
+		runes = append(traverseCharRangeAtomOneOrMore(altNode.left, runes), runes...)
+		runes = append(traverseCharRangeAtomOneOrMore(altNode.right, runes), runes...)
 	} else if characterNode, ok := node.(CharacterNode); ok {
 		runes = append(runes, rune(characterNode))
 	}
