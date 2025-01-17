@@ -161,8 +161,6 @@ func (rp *regexParser) parseGroup() (Node, error) {
 		node, err = rp.parse()
 	} else if rp.consumeIf(firstSets["CharRange"]...) { // CharRange
 		node, err = rp.parseCharRange()
-	} else { // Char
-		node, err = rp.parseCharacter()
 	}
 
 	if err != nil {
@@ -267,8 +265,14 @@ func traverseCharRangeAtomOneOrMore(node Node, runes []rune) []rune {
 // TODO: rename
 func SubtractSlice2FromSlice1(slice1 []rune, slice2 []rune) []rune {
 	newRunes := make([]rune, 0)
-	for _, i := range slice2 {
-		if !slices.Contains(slice1, i) { // prolly way more efficient way to to do this
+	//for _, i := range slice2 {
+	//	if !slices.Contains(slice1, i) { // prolly way more efficient way to to do this
+	//		newRunes = append(newRunes, i)
+	//	}
+	//}
+
+	for _, i := range slice1 {
+		if !slices.Contains(slice2, i) {
 			newRunes = append(newRunes, i)
 		}
 	}

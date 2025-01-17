@@ -1,7 +1,7 @@
 package regex
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -27,8 +27,9 @@ var (
 		right: CharacterNode('d'),
 	}
 
-	notRegex2         Regex = "^[abcd]"
-	expectedNotRegex2       = CharacterClassNode([]rune{'a', 'b', 'c', 'd'})
+	notRegex2           Regex = "[^abcd]"
+	notRegex2Characters       = SubtractSlice2FromSlice1(anyChar, []rune{'a', 'b', 'c', 'd'})
+	expectedNotRegex2         = CharacterClassNode(notRegex2Characters)
 
 	regex3            Regex = "[a-zA-Z]?"
 	expectedRegex3AST       = ConcatenationNode{
@@ -38,6 +39,7 @@ var (
 		},
 	}
 
+	// TODO: is ^ outside of valid regex?
 	_      Regex = "^[a-zA-Z]?"
 	regex6 Regex = "[e-]"
 )
@@ -63,14 +65,20 @@ func TestRegexParse(t *testing.T) {
 	//	t.Errorf("invalid")
 	//}
 
+	// notRegex2
+	// TODO: rename
+	regex2AST, err := notRegex2.GetAST()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if !reflect.DeepEqual(regex2AST, expectedNotRegex2) {
+		t.Errorf("invalid")
+	}
+
 	// regex 3
 	//regex3AST, err := regex3.GetAST()
 	//if err != nil {
 	//	t.Errorf(err.Error()) // TODO: describe error
 	//}
-	test := SubtractSlice2FromSlice1([]rune{'a', 'b', 'c', 'd'}, []rune{'a'})
-	print(len(test))
-	for _, t := range test {
-		fmt.Printf("%c", t)
-	}
 }
