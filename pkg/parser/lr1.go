@@ -27,7 +27,7 @@ func newLR1AutomationState(id *uint, arLookaheadMap arLookaheadMap) *lrAutomatio
 	}
 }
 
-func (s *lrAutomationState) String() string {
+func (s lrAutomationState) String() string {
 	longestRule := 0
 	for r := range s.arLookaheadMap {
 		rLen := len(r.String())
@@ -47,7 +47,7 @@ func (s *lrAutomationState) String() string {
 
 func (ar augmentedRule) getClosureRecursion(g *grammar.Grammar, closure arLookaheadMap) {
 	nextSymbol := ar.getNextSymbol()
-	if nextSymbol == nil || nextSymbol.SymbolType != grammar.NonTermSymbol {
+	if nextSymbol.SymbolType != grammar.NonTermSymbol {
 		return
 	}
 
@@ -59,7 +59,7 @@ func (ar augmentedRule) getClosureRecursion(g *grammar.Grammar, closure arLookah
 	delete(newLookahead, grammar.Epsilon)
 
 	for _, rule := range g.RuleNTMap[nextSymbol.Name] {
-		newAR := *NewAugmentedRule(rule, 0)
+		newAR := NewAugmentedRule(rule, 0)
 		if _, ARExists := closure[newAR]; ARExists {
 			utils.AddToMap(newLookahead, closure[newAR])
 		} else {
@@ -80,20 +80,20 @@ func getTransitions(g *grammar.Grammar, core arLookaheadMap) map[grammar.Symbol]
 
 	for ar, lookahead := range core {
 		nextSymbol := ar.getNextSymbol()
-		if nextSymbol == nil {
+		if nextSymbol == grammar.Epsilon {
 			continue
 		}
 
-		if _, ok := transitions[*nextSymbol]; !ok {
-			transitions[*nextSymbol] = make(arLookaheadMap)
+		if _, ok := transitions[nextSymbol]; !ok {
+			transitions[nextSymbol] = make(arLookaheadMap)
 		}
 
-		newAR := *NewAugmentedRule(ar.Rule, ar.position+1)
+		newAR := NewAugmentedRule(ar.Rule, ar.position+1)
 		//if transitions are not make correctly it may be HERE
 		//removed check for if transitions[*nextSymbol][newAR] was already set because it seemed redundant
-		transitions[*nextSymbol][newAR] = maps.Clone(lookahead)
+		transitions[nextSymbol][newAR] = maps.Clone(lookahead)
 
-		getClosure(g, transitions[*nextSymbol])
+		getClosure(g, transitions[nextSymbol])
 	}
 	return transitions
 }
@@ -111,7 +111,7 @@ func generateLR1(g *grammar.Grammar) (*lrAutomationState, []*lrAutomationState) 
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
+		NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 
@@ -154,7 +154,7 @@ func generateLALR(g *grammar.Grammar) (*lrAutomationState, []*lrAutomationState)
 	var id uint = 0
 
 	kernel := newLR1AutomationState(&id, arLookaheadMap{
-		*NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
+		NewAugmentedRule(g.FirstRule, 0): {grammar.EndOfInput: struct{}{}},
 	})
 	getClosure(g, kernel.arLookaheadMap)
 

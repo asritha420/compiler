@@ -1,5 +1,7 @@
 package main
 
+// TODO fix all the pointers!!
+
 import (
 	"fmt"
 
@@ -120,7 +122,7 @@ func GenerateGrammar() *Grammar {
 	id2 := NewRule("identifier", idChar, identifier)
 
 	//string
-	str1 := NewRule("string", &Epsilon)
+	str1 := NewRule("string", Epsilon)
 	str2 := NewRule("string", strChar, str)
 
 	//token
@@ -129,7 +131,7 @@ func GenerateGrammar() *Grammar {
 
 	//separator
 	se1 := NewRule("separator", space)
-	se2 := NewRule("separator", &Epsilon)
+	se2 := NewRule("separator", Epsilon)
 
 	//term
 	t1 := NewRule("term", token)
@@ -143,7 +145,7 @@ func GenerateGrammar() *Grammar {
 	u1 := NewRule("unary", question)
 	u2 := NewRule("unary", asterisk)
 	u3 := NewRule("unary", plus)
-	u4 := NewRule("unary", &Epsilon)
+	u4 := NewRule("unary", Epsilon)
 
 	//factor
 	f1 := NewRule("factor", sTerm, unary, separator)
@@ -213,11 +215,6 @@ func main() {
 		{Name: ";", Literal: ";"},
 	}
 	tree, _ := p.Parse(tokens)
-	Convert(tree, map[*Rule]NonTermConversionFunc[grammarAST]{
-		r1:func(ptnt *ParseTreeNonTerm, ga []*grammarAST) (*grammarAST, error) {
-			return grammarRule{}
-		}
-	}, func(ptnt *ParseTreeNonTerm, t []*grammarAST) (*grammarAST, error) {return nil, nil},
-	func(t scanner.Token) (*grammarAST, error) {return nil, nil})
+	
 	fmt.Println(tree.GetLiteral())
 }

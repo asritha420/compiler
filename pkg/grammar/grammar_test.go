@@ -20,10 +20,10 @@ func TestFirstFollow(t *testing.T) {
 	r1 := NewRule("P", E)
 	r2 := NewRule("E", T, EP)
 	r3 := NewRule("E'", plus, T, EP)
-	r4 := NewRule("E'", &Epsilon)
+	r4 := NewRule("E'", Epsilon)
 	r5 := NewRule("T", F, TP)
 	r6 := NewRule("T'", mult, F, TP)
-	r7 := NewRule("T'", &Epsilon)
+	r7 := NewRule("T'", Epsilon)
 	r8 := NewRule("F", lParen, E, rParen)
 	r9 := NewRule("F", i)
 
