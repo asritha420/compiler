@@ -1,21 +1,23 @@
 package regex
 
+const epsilon = rune(0)
+
 // TODO: fix these literals, so they match w/ the function name names in grammar, inconsistent naming?
 var (
 	anyChar   = append(append(digits(), lowercaseLetters()...), uppercaseLetters()...)
 	firstSets = map[string][]rune{
 		"Regex":         append(anyChar, '(', '['),
 		"Alt":           append(anyChar, '(', '['),
-		"AltPrime":      {'|'},
+		"AltPrime":      {'|', epsilon},
 		"Concat":        append(anyChar, '(', '['),
-		"ConcatPrime":   append(anyChar, '(', '['),
+		"ConcatPrime":   append(anyChar, '(', '[', epsilon),
 		"Repeat":        append(anyChar, '(', '['),
 		"Quantifier":    {'*', '+', '?'},
 		"Group":         append(anyChar, '(', '['),
 		"CharRange":     {'['},
 		"CharRangeBody": append(anyChar, '^'),
-		"CharRangeAtom": append(anyChar, '(', '['),
-		"Char":          append(anyChar, '(', '['),
+		"CharRangeAtom": append(anyChar),
+		"Char":          append(anyChar),
 	}
 )
 

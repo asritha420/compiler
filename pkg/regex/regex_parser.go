@@ -11,22 +11,34 @@ type regexParser struct {
 }
 
 // lookahead should just return the rune??? or is type used somewhere throughout
-func (rp *regexParser) lookAhead() rune {
-	return rp.regex[rp.curr]
-}
+//func (rp *regexParser) lookAhead() rune {
+//	return rp.regex[rp.curr]
+//}
 
 // is this called?
 func (rp *regexParser) putBackToken() {
 	rp.curr--
 }
 
+// TODO - replace this with above ?
 // consumes and returns the current rune
-func (rp *regexParser) consume() rune {
-	if rp.curr > len(rp.regex) {
-		rp.curr++
-		return rp.regex[rp.curr-1]
+//func (rp *regexParser) consume() rune {
+//	if rp.curr > len(rp.regex) {
+//		rp.curr++
+//		return rp.regex[rp.curr-1]
+//	}
+//	return 0
+//}
+
+func (rp *regexParser) consumeIf(matching ...rune) bool {
+	if rp.curr >= len(rp.regex) {
+		return false // is this the best way to do ti?
 	}
-	return 0
+	if slices.Contains(matching, rp.regex[rp.curr]) {
+		rp.curr++
+		return true
+	}
+	return false
 }
 
 // Regex -> Alt
@@ -60,8 +72,7 @@ func (rp *regexParser) parseAlt() (Node, error) {
 
 // AltPrime -> "|" Concat AltPrime | EPSILON
 func (rp *regexParser) parseAltPrime() (Node, error) {
-	if slices.Contains(firstSets["AltPrime"], rp.lookAhead()) {
-		rp.curr++ // consume "|"
+	if rp.consumeIf(firstSets["AltPrime"]...) {
 		return rp.parseConcat()
 	}
 
@@ -95,8 +106,7 @@ func (rp *regexParser) parseConcat() (Node, error) {
 
 // ConcatPrime -> Repeat ConcatPrime | EPSILON
 func (rp *regexParser) parseConcatPrime() (Node, error) {
-	if slices.Contains(firstSets["ConcatPrime"], rp.lookAhead()) {
-		rp.curr++
+	if rp.consumeIf(firstSets["ConcatPrime"]...) {
 		return rp.parseRepeat()
 	}
 	return nil, nil
@@ -113,7 +123,9 @@ func (rp *regexParser) parseRepeat() (Node, error) {
 		return node, nil
 	}
 
-	quantifierToken := rp.regex[rp.curr-1] // this should just be in the parse quantifier ??
+	quantifierToken := rp.regex[rp.curr-1]
+
+	// some way to have the below in ParseQuantifier()?
 	switch quantifierToken {
 	case '*':
 		// kleene star
@@ -131,10 +143,10 @@ func (rp *regexParser) parseRepeat() (Node, error) {
 
 // Quantifier -> "*" | "+" | "?"
 func (rp *regexParser) parsedQuantifier() bool {
-	if slices.Contains(firstSets["Quantifier"], rp.lookAhead()) {
-		rp.curr++ // consume quantifier
+	if rp.consumeIf(firstSets["Quantifier"]...) {
 		return true
 	}
+
 	return false
 }
 
@@ -145,10 +157,9 @@ func (rp *regexParser) parseGroup() (Node, error) {
 		err  error
 	)
 
-	if rp.lookAhead() == '(' { // "(" Regex ")"
-		rp.curr++
+	if rp.consumeIf('(') { // "(" Regex ")"
 		node, err = rp.parse()
-	} else if slices.Contains(firstSets["CharRange"], rp.lookAhead()) { // CharRange
+	} else if rp.consumeIf(firstSets["CharRange"]...) { // CharRange
 		node, err = rp.parseCharRange()
 	} else { // Char
 		node, err = rp.parseCharacter()
@@ -163,14 +174,13 @@ func (rp *regexParser) parseGroup() (Node, error) {
 
 // CharRange -> "[" CharRangeBody "]"
 func (rp *regexParser) parseCharRange() (Node, error) {
-	rp.curr++ // consume "["
-
 	node, err := rp.parseCharRangeBody()
 	if err != nil {
 		return nil, err
 	}
 
-	rp.curr++ // consume "]"
+	rp.consumeIf(']')
+
 	return node, nil
 }
 
@@ -178,9 +188,8 @@ func (rp *regexParser) parseCharRange() (Node, error) {
 func (rp *regexParser) parseCharRangeBody() (Node, error) {
 	isNot := false
 
-	if rp.lookAhead() == '^' {
+	if rp.consumeIf('^') {
 		isNot = true
-		rp.curr++ // consume "^"
 	}
 
 	node, err := rp.parseCharRangeAtom() // must consume CharRangeAtom at least once
@@ -188,7 +197,7 @@ func (rp *regexParser) parseCharRangeBody() (Node, error) {
 		return nil, err
 	}
 
-	for !slices.Contains(firstSets["CharRangeAtom"], rp.lookAhead()) { // keep consuming CharRangeAtom
+	for slices.Contains(firstSets["CharRangeAtom"], rp.regex[rp.curr]) { // lookahead, better way of doing this?
 		nextCharRangeAtom, err := rp.parseCharRangeAtom()
 		if err != nil {
 			return nil, err
@@ -196,7 +205,7 @@ func (rp *regexParser) parseCharRangeBody() (Node, error) {
 		node = NewAlternationNode(node, nextCharRangeAtom) // TODO: does this make sense?, should this be jsut concateanted of the CharacterClassNodes?
 	}
 
-	if !isNot {
+	if !isNot { // if its true
 		return node, nil
 	}
 
@@ -205,11 +214,44 @@ func (rp *regexParser) parseCharRangeBody() (Node, error) {
 	isRunes := make([]rune, 0)
 	isRunes = traverseCharRangeAtomOneOrMore(node, isRunes)
 
-	notRunes := FindDifferenceSlices(anyChar, isRunes)
+	notRunes := SubtractSlice2FromSlice1(anyChar, isRunes)
 
 	return NewCharacterClassNode(notRunes), nil
 }
 
+// CharRangeAtom -> Char ("-" Char)?
+func (rp *regexParser) parseCharRangeAtom() (Node, error) {
+	startChar, err := rp.parseCharacter()
+	if err != nil {
+		return nil, err
+	}
+
+	if !rp.consumeIf('-') { // ("-" Char) is not present
+		return startChar, nil
+	}
+
+	if !rp.consumeIf(firstSets["Char"]...) {
+		return nil, errors.New("invalid character to the right of the -") // TODO: better error handling
+	}
+
+	indexOfStarChar := slices.Index(anyChar, rune(startChar))
+	indexOfEndChar := slices.Index(anyChar, rp.regex[rp.curr-1]) // TODO: better way to do this?
+
+	characterClass := anyChar[indexOfStarChar : indexOfEndChar+1]
+	return NewCharacterClassNode(characterClass), nil
+}
+
+// Char -> ANY_VALID_CHAR
+func (rp *regexParser) parseCharacter() (CharacterNode, error) {
+	if rp.consumeIf(firstSets["Char"]...) {
+		return NewCharacterNode(rp.regex[rp.curr-1]), nil // TODO: have a thing ofr rp.regex[rp.curr-1]??
+	}
+	return 0, errors.New("invalid char") // todo: fix error
+}
+
+// TODO: look at what interfaces the old regex parser implemented (String, ConvertToNFA)?
+// TODO: is this best way to store ast?
+// TODO: get rid of any nested ifs
 // move to bottom, add comment
 func traverseCharRangeAtomOneOrMore(node Node, runes []rune) []rune {
 	if altNode, ok := node.(AlternationNode); ok {
@@ -222,7 +264,8 @@ func traverseCharRangeAtomOneOrMore(node Node, runes []rune) []rune {
 }
 
 // should be generic, move to utils, also does something like this alr exist?
-func FindDifferenceSlices(slice1 []rune, slice2 []rune) []rune {
+// TODO: rename
+func SubtractSlice2FromSlice1(slice1 []rune, slice2 []rune) []rune {
 	newRunes := make([]rune, 0)
 	for _, i := range slice2 {
 		if !slices.Contains(slice1, i) { // prolly way more efficient way to to do this
@@ -232,41 +275,4 @@ func FindDifferenceSlices(slice1 []rune, slice2 []rune) []rune {
 	return newRunes
 }
 
-// CharRangeAtom -> Char ("-" Char)?
-func (rp *regexParser) parseCharRangeAtom() (Node, error) {
-	startLiteral, err := rp.parseCharacter()
-	if err != nil {
-		return nil, err
-	}
-
-	if rp.lookAhead() != '-' { // ("-" Char) is not present
-		return startLiteral, nil
-	}
-
-	rp.curr++ // consume '-'
-
-	endChar := rp.consume()
-
-	if endChar == 0 {
-		return nil, errors.New(`nothing after "-"`)
-	} // TODO: handle error, is 0 the correct one?
-
-	indexOfStarChar := slices.Index(anyChar, rune(startLiteral))
-	indexOfEndChar := slices.Index(anyChar, endChar) // TODO: better way to do this?
-
-	characterClass := anyChar[indexOfStarChar : indexOfEndChar+1]
-	return NewCharacterClassNode(characterClass), nil
-}
-
-// Char -> ANY_VALID_CHAR
-func (rp *regexParser) parseCharacter() (CharacterNode, error) {
-	if slices.Contains(firstSets["Char"], rp.lookAhead()) {
-		rp.curr++ // consume the char
-		return NewCharacterNode(rp.regex[rp.curr]), nil
-	}
-	return 0, errors.New("invalid char") // todo: fix error
-}
-
-// TODO: look at what interfaces the old regex parser implemented (String, ConvertToNFA)?
-// TODO: is this best way to store ast?
-// TODO: get rid of any nested ifs
+// TODO: remove any ambiguity in consuming
