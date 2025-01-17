@@ -26,7 +26,6 @@ var (
 )
 
 func TestRegexParse(t *testing.T) {
-
 	regex1AST, err := regex1.GetAST()
 	if err != nil {
 		t.Errorf(err.Error())
