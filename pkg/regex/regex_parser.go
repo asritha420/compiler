@@ -2,7 +2,6 @@ package regex
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 )
 
@@ -110,11 +109,11 @@ func (rp *regexParser) parseRepeat() (Node, error) {
 		return nil, err
 	}
 
-	if err = rp.parseQuantifier(); err != nil {
-		return nil, err
+	if !rp.parsedQuantifier() { // there is no quantifier present
+		return node, nil
 	}
 
-	quantifierToken := rp.regex[rp.curr]
+	quantifierToken := rp.regex[rp.curr-1] // this should just be in the parse quantifier ??
 	switch quantifierToken {
 	case '*':
 		// kleene star
@@ -131,11 +130,12 @@ func (rp *regexParser) parseRepeat() (Node, error) {
 }
 
 // Quantifier -> "*" | "+" | "?"
-func (rp *regexParser) parseQuantifier() error {
+func (rp *regexParser) parsedQuantifier() bool {
 	if slices.Contains(firstSets["Quantifier"], rp.lookAhead()) {
 		rp.curr++ // consume quantifier
+		return true
 	}
-	return fmt.Errorf("error") // TODO: better error handling
+	return false
 }
 
 // Group -> "(" Regex ")" | CharRange | Char
