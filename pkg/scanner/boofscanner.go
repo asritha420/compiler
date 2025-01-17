@@ -6,11 +6,6 @@ package scanner
 
 //type TokenType int
 
-//type Token struct {
-//	Name    string
-//	Literal string
-//	//Line      int
-//}
 //
 //// for now all, must have an identifer token for the bug
 //type ScannerGen struct {

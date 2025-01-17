@@ -26,10 +26,6 @@ func NewGrammar(rules ...*Rule) *Grammar {
 	g.generateFirstSets()
 	g.generateFollowSets()
 
-	for _, r := range g.Rules {
-		r.removeEpsilon()
-	}
-
 	return g
 }
 

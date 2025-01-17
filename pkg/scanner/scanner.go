@@ -16,3 +16,13 @@ func New(map[string]regex.Regex) Scanner {
 
 type scannerGen struct {
 }
+
+//must implement parseTreeNode interface!
+type Token struct {
+	Name    string
+	Literal string
+}
+
+func (t Token) GetLiteral() string {
+	return t.Literal
+}

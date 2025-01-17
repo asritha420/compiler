@@ -13,6 +13,11 @@ type augmentedRule struct {
 }
 
 func NewAugmentedRule(r *grammar.Rule, position int) *augmentedRule {
+	//skip any epsilons
+	for position < len(r.SententialForm) && *r.SententialForm[position] == grammar.Epsilon {
+		position++
+	}
+	
 	return &augmentedRule{
 		Rule:     r,
 		position: position,

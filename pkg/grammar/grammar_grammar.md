@@ -24,7 +24,8 @@ separator = space | epsilon;
 term = token | identifier | "(", rhs, ")";
 sTerm = separator, term, separator;
 
-factor = sTerm | sTerm, "?", separator | sTerm, "*", separator | sTerm, "+", separator;
+unary = "?" | "*" | "+" | epsilon
+factor = sTerm, unary, separator;
 
 concatenation = factor | factor, ",", concatenation;
 alternation = concatenation | concatenation, "|", alternation;
