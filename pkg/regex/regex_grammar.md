@@ -39,3 +39,18 @@ CharRangeBody: ^, v
 CharRangeAtom: v 
 Char: v
 ```
+
+
+**regex syntax**: 
+
+**character class**: 
+- `[xyz]`: xyz
+- `[a-c]`: abc
+- `[abcd-]` or `[-abcd]`: abcd-
+- `[^abc]`: negated, anything not in []
+- `.`: wildcard  
+
+
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet -> is this official regex? 
+
+

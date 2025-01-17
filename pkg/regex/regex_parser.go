@@ -20,16 +20,6 @@ func (rp *regexParser) putBackToken() {
 	rp.curr--
 }
 
-// TODO - replace this with above ?
-// consumes and returns the current rune
-//func (rp *regexParser) consume() rune {
-//	if rp.curr > len(rp.regex) {
-//		rp.curr++
-//		return rp.regex[rp.curr-1]
-//	}
-//	return 0
-//}
-
 func (rp *regexParser) consumeIf(matching ...rune) bool {
 	if rp.curr >= len(rp.regex) {
 		return false // is this the best way to do ti?
