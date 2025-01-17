@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"asritha.dev/compiler/pkg/grammar"
-	"asritha.dev/compiler/pkg/scannergenerator"
+	"asritha.dev/compiler/pkg/scanner"
 )
 
 var (
@@ -75,7 +75,7 @@ func (p parser) makeTables() {
 				continue
 			}
 
-			if nextSymbol.SymbolType == grammar.TokenSymbol{
+			if nextSymbol.SymbolType == grammar.TokenSymbol {
 				p.actionTable[s][*nextSymbol] = newShift(s.transitions[*nextSymbol])
 				continue
 			}
@@ -89,14 +89,14 @@ func (p parser) makeTables() {
 	}
 }
 
-func (p parser) Parse(input []scannergenerator.Token) (*parseTreeNode, error) {
+func (p parser) Parse(input []scanner.Token) (ParseTreeNode, error) {
 	stack := []*lrAutomationState{p.kernel}
-	treeStack := make([]*parseTreeNode, 0)
+	treeStack := make([]ParseTreeNode, 0)
 
 	for {
-		stackTop := stack[len(stack)-1] //top of stack
-		var firstInput scannergenerator.Token            // first input
-		var firstInputSymbol grammar.Symbol     // first input as symbol (may be EndOfInput)
+		stackTop := stack[len(stack)-1]     //top of stack
+		var firstInput scanner.Token        // first input
+		var firstInputSymbol grammar.Symbol // first input as symbol (may be EndOfInput)
 		if len(input) == 0 {
 			firstInputSymbol = grammar.EndOfInput
 		} else {
@@ -111,24 +111,24 @@ func (p parser) Parse(input []scannergenerator.Token) (*parseTreeNode, error) {
 
 		if nextAction.accept {
 			// accept
-			root := newParseTreeNonTerm(p.FirstRule.NonTerm, treeStack)
+			root := newParseTreeNonTerm(p.FirstRule, treeStack)
 			return root, nil
 		}
 
 		if nextAction.shift != nil {
 			// shift
 			stack = append(stack, nextAction.shift)
-			treeStack = append(treeStack, newParseTreeToken(firstInput))
+			treeStack = append(treeStack, firstInput)
 			input = input[1:]
 			continue
 		}
 
 		// reduce
-		ruleLen := len(nextAction.reduce.SententialForm)
+		ruleLen := nextAction.reduce.Len()
 		newStackLen := len(stack) - ruleLen
 		newTreeStackLen := len(treeStack) - ruleLen
 
-		newNode := newParseTreeNonTerm(nextAction.reduce.NonTerm, slices.Clone(treeStack[newTreeStackLen:]))
+		newNode := newParseTreeNonTerm(nextAction.reduce, slices.Clone(treeStack[newTreeStackLen:]))
 
 		treeStack = treeStack[0:newTreeStackLen]
 		treeStack = append(treeStack, newNode)

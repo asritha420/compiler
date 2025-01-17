@@ -1,134 +1,128 @@
 package parser
 
 import (
-	"asritha.dev/compiler/pkg/scannergenerator"
-	"asritha.dev/compiler/pkg/utils"
+	"fmt"
+
+	"asritha.dev/compiler/pkg/grammar"
+	"asritha.dev/compiler/pkg/scanner"
 )
 
-type parseTreeNode struct {
-	name     string
-	literal  string
-	children []*parseTreeNode
+type ParseTreeNode interface {
+	GetLiteral() string
 }
 
-func newParseTreeNonTerm(name string, children []*parseTreeNode) *parseTreeNode {
-	return &parseTreeNode{
-		name:     name,
+type ParseTreeNonTerm struct {
+	rule     *grammar.Rule
+	children []ParseTreeNode
+}
+
+func newParseTreeNonTerm(rule *grammar.Rule, children []ParseTreeNode) *ParseTreeNonTerm {
+	return &ParseTreeNonTerm{
+		rule:     rule,
 		children: children,
 	}
 }
 
-func newParseTreeToken(t scannergenerator.Token) *parseTreeNode {
-	return &parseTreeNode{
-		name:    t.Name,
-		literal: t.Literal,
-	}
-}
-
-/*
-Recursively constructs the literal represented by a node
-*/
-func (node *parseTreeNode) GetLiteral() string {
-	if len(node.children) == 0 {
-		return node.literal
-	}
+func (node ParseTreeNonTerm) GetLiteral() string {
 	out := ""
-	for _, n := range node.children {
-		out += n.GetLiteral()
+	for _, c := range node.children {
+		out += c.GetLiteral()
 	}
 	return out
 }
 
+// type formatFunc func(*parseTreeNode) (*parseTreeNode, error)
 
-type formatFunc func(*parseTreeNode) (*parseTreeNode, error)
+// func GenerateRemoveFormatter(removeSet utils.Set[string]) formatFunc {
+// 	return func(node *parseTreeNode) (*parseTreeNode, error) {
+// 		if _, ok := removeSet[node.name]; ok {
+// 			return nil, nil
+// 		}
+// 		return node, nil
+// 	}
+// }
 
-func GenerateRemoveFormatter(removeSet utils.Set[string]) formatFunc {
-	return func(node *parseTreeNode) (*parseTreeNode, error) {
-		if _, ok := removeSet[node.name]; ok {
-			return nil, nil
-		}
-		return node, nil
-	}
-}
+// func GenerateRemoveEmptyFormatter() formatFunc {
+// 	return func(node *parseTreeNode) (*parseTreeNode, error) {
+// 		if node.literal == "" && len(node.children) == 0 {
+// 			return nil, nil
+// 		}
+// 		return node, nil
+// 	}
+// }
 
-func GenerateRemoveEmptyFormatter() formatFunc {
-	return func(node *parseTreeNode) (*parseTreeNode, error) {
-		if node.literal == "" && len(node.children) == 0 {
-			return nil, nil
-		}
-		return node, nil
-	}
-}
-
-func GenerateCompressFormatter(compressSet utils.Set[string]) formatFunc {
-	return func(node *parseTreeNode) (*parseTreeNode, error) {
-		if _, ok := compressSet[node.name]; ok {
-			node.literal = node.GetLiteral()
-			node.children = node.children[:0]	
-		}
-		return node, nil
-	}
-}
+// func GenerateCompressFormatter(compressSet utils.Set[string]) formatFunc {
+// 	return func(node *parseTreeNode) (*parseTreeNode, error) {
+// 		if _, ok := compressSet[node.name]; ok {
+// 			node.literal = node.GetLiteral()
+// 			node.children = node.children[:0]
+// 		}
+// 		return node, nil
+// 	}
+// }
 
 /*
-General purpose formatter. It starts by running the preChildrenFormatters using the output of the last one as the input to the next. It then recursively calls Format on all the children of the node then runs the postChildrenFormatters. If any formatter returns an error, it is brought up to the top level. If any formatter returns nil for a node, it is removed from its parent node.
+General purpose formatter. It starts by running the preChildrenFormatters using the output of the last formatter as the input to the next. It then recursively calls Format on all the children of the node then runs the postChildrenFormatters. If any formatter returns an error, it is brought up to the top level. If any formatter returns nil for a node, it is removed from its parent node.
 */
-func (node *parseTreeNode) Format(preChildrenFormatters []formatFunc, postChildrenFormatters []formatFunc) (*parseTreeNode, error) {
-	var err error
-	for _, f := range preChildrenFormatters {
-		node, err = f(node)
-		if err != nil {
-			return nil, err
+// func (node parseTreeNode) Format(preChildrenFormatters []formatFunc, postChildrenFormatters []formatFunc) (*parseTreeNode, error) {
+// 	var err error
+// 	for _, f := range preChildrenFormatters {
+// 		node, err = f(node)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if node == nil {
+// 			return nil, nil
+// 		}
+// 	}
+
+// 	for i := 0; i < len(node.children); i++ {
+// 		node.children[i], err = node.children[i].Format(preChildrenFormatters, postChildrenFormatters)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if node.children[i] == nil {
+// 			utils.Remove(node.children, i)
+// 			i--
+// 		}
+// 	}
+
+// 	for _, f := range postChildrenFormatters {
+// 		node, err = f(node)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if node == nil {
+// 			return nil, nil
+// 		}
+// 	}
+
+// 	return node, nil
+// }
+
+type NonTermConversionFunc[T any] func(*ParseTreeNonTerm, []*T) (*T, error)
+type TokenConversionFunc[T any] func(scanner.Token) (*T, error)
+
+func Convert[T any](node ParseTreeNode, nonTermConversion map[*grammar.Rule]NonTermConversionFunc[T], nonTermDefaultConversion NonTermConversionFunc[T], tokenConversion TokenConversionFunc[T]) (*T, error) {
+	switch n := node.(type) {
+	case *ParseTreeNonTerm:
+		children := make([]*T, len(n.children))
+		for i, child := range n.children {
+			ret, err := Convert(child, nonTermConversion, nonTermDefaultConversion, tokenConversion)
+			if err != nil {
+				return nil, err
+			}
+			children[i] = ret
 		}
-		if node == nil {
-			return nil, nil
+
+		if conversionFunc, ok := nonTermConversion[n.rule]; ok {
+			return conversionFunc(n, children)
 		}
+
+		return nonTermDefaultConversion(n, children)
+	case scanner.Token:
+		return tokenConversion(n)
 	}
 
-	for i := 0; i < len(node.children); i++ {
-		node.children[i], err = node.children[i].Format(preChildrenFormatters, postChildrenFormatters)
-		if err != nil {
-			return nil, err
-		}
-		if node.children[i] == nil {
-			utils.Remove(node.children, i)
-			i--
-		}
-	}
-
-	for _, f := range postChildrenFormatters {
-		node, err = f(node)
-		if err != nil {
-			return nil, err
-		}
-		if node == nil {
-			return nil, nil
-		}
-	}
-
-	return node, nil
-}
-
-type convertFunc[T any] func(*parseTreeNode) (*T, error)
-type convertFuncWithChildren[T any] func(*parseTreeNode, []*T) (*T, error)
-
-func Convert[T any](node *parseTreeNode, preChildrenConversions map[string]convertFunc[T], postChildrenConversions map[string]convertFuncWithChildren[T], defaultConversion convertFuncWithChildren[T]) (*T, error) {
-	if conversionFunc, ok := preChildrenConversions[node.name]; ok {
-		return conversionFunc(node)
-	}
-
-	children := make([]*T, len(node.children))
-	for i, child := range node.children {
-		ret, err := Convert(child, preChildrenConversions, postChildrenConversions, defaultConversion)
-		if err != nil {
-			return nil, err
-		}
-		children[i] = ret
-	}
-
-	if conversionFunc, ok := postChildrenConversions[node.name]; ok {
-		return conversionFunc(node, children)
-	}
-
-	return defaultConversion(node, children)
+	return nil, fmt.Errorf("invalid node %v", node)
 }

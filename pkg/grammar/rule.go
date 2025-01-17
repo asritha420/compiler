@@ -18,13 +18,17 @@ func NewRule(nonTerm string, sententialForm ...*Symbol) *Rule {
 	}
 }
 
-func (r *Rule) removeEpsilon() {
-	for i := 0; i < len(r.SententialForm); i++ {
-		if *r.SententialForm[i] == Epsilon {
-			r.SententialForm = utils.Remove(r.SententialForm, i)
-			i--;
+/*
+Returns the length of the sentential form not including epsilons
+*/
+func (r Rule) Len() int {
+	len := 0
+	for _, s := range r.SententialForm {
+		if *s != Epsilon {
+			len++
 		}
 	}
+	return len
 }
 
 func (r Rule) String() string {

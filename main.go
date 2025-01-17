@@ -2,34 +2,32 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	. "asritha.dev/compiler/pkg/grammar"
 	. "asritha.dev/compiler/pkg/parser"
-	. "asritha.dev/compiler/pkg/scannergenerator"
-	"asritha.dev/compiler/pkg/utils"
+	"asritha.dev/compiler/pkg/scanner"
 )
 
-func GenerateGrammarScanner() *Scanner {
+// func GenerateGrammarScanner() *Scanner {
 
-	grammarTokens := []TokenInfo{
-		{
-			TokenType:   "letter",
-			RegexString: "[a-zA-Z]",
-		},
-		{
-			TokenType:   "digit",
-			RegexString: "[0-9]",
-		},
-		{
-			TokenType:   "space",
-			RegexString: `\s+`,
-		},
-	}
-	grammarScanner, _ := NewScanner(grammarTokens)
-	
-	return grammarScanner
-}
+// 	grammarTokens := []TokenInfo{
+// 		{
+// 			TokenType:   "letter",
+// 			RegexString: "[a-zA-Z]",
+// 		},
+// 		{
+// 			TokenType:   "digit",
+// 			RegexString: "[0-9]",
+// 		},
+// 		{
+// 			TokenType:   "space",
+// 			RegexString: `\s+`,
+// 		},
+// 	}
+// 	grammarScanner, _ := NewScanner(grammarTokens)
+
+// 	return grammarScanner
+// }
 
 func GenerateGrammar() *Grammar {
 	//scanner tokens
@@ -71,6 +69,7 @@ func GenerateGrammar() *Grammar {
 	separator := NewNonTerm("separator")
 	term := NewNonTerm("term")
 	sTerm := NewNonTerm("sTerm")
+	unary := NewNonTerm("unary")
 	factor := NewNonTerm("factor")
 	concatenation := NewNonTerm("concatenation")
 	alternation := NewNonTerm("alternation")
@@ -140,11 +139,14 @@ func GenerateGrammar() *Grammar {
 	//sTerm
 	st1 := NewRule("sTerm", separator, term, separator)
 
+	//unary
+	u1 := NewRule("unary", question)
+	u2 := NewRule("unary", asterisk)
+	u3 := NewRule("unary", plus)
+	u4 := NewRule("unary", &Epsilon)
+
 	//factor
-	f1 := NewRule("factor", sTerm)
-	f2 := NewRule("factor", sTerm, question, separator)
-	f3 := NewRule("factor", sTerm, asterisk, separator)
-	f4 := NewRule("factor", sTerm, plus, separator)
+	f1 := NewRule("factor", sTerm, unary, separator)
 
 	//concatenation
 	c1 := NewRule("concatenation", factor)
@@ -176,7 +178,8 @@ func GenerateGrammar() *Grammar {
 		se1,se2,
 		t1,t2,t3,
 		st1,
-		f1,f2,f3,f4,
+		u1,u2,u3,u4,
+		f1,
 		c1,c2,
 		a1,a2,
 		lhs1,rhs1,
@@ -184,17 +187,37 @@ func GenerateGrammar() *Grammar {
 	)
 }
 
+type grammarAST interface {
+}
+
+type grammarRule struct {
+	nt string
+	prod grammarAST
+}
+
 func main() {
 	g := GenerateGrammar()
 
-	gs := GenerateGrammarScanner()
+	// gs := *GenerateGrammarScanner()
 
 	p := NewParser(g, true)
 
-	tokens, err := gs.Scan("P=E ;\n\nE=(\"te\\\"st\",lol)*;\nR=hello | test, y\n;")
-	if err != nil {
-		log.Fatal(err)
+	// tokens, err := gs.Scan("P=E ;\n\nE=(\"te\\\"st\",lol)*;\nR=hello | test, y\n;")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	tokens := []scanner.Token{
+		{Name: "letter", Literal: "P"},
+		{Name: "=", Literal: "="},
+		{Name: "letter", Literal: "E"},
+		{Name: ";", Literal: ";"},
 	}
 	tree, _ := p.Parse(tokens)
+	Convert(tree, map[*Rule]NonTermConversionFunc[grammarAST]{
+		r1:func(ptnt *ParseTreeNonTerm, ga []*grammarAST) (*grammarAST, error) {
+			return grammarRule{}
+		}
+	}, func(ptnt *ParseTreeNonTerm, t []*grammarAST) (*grammarAST, error) {return nil, nil},
+	func(t scanner.Token) (*grammarAST, error) {return nil, nil})
 	fmt.Println(tree.GetLiteral())
 }
