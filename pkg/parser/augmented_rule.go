@@ -3,8 +3,8 @@ package parser
 import (
 	"fmt"
 
-	"asritha.dev/compiler/pkg/utils"
 	"asritha.dev/compiler/pkg/grammar"
+	"asritha.dev/compiler/pkg/utils"
 )
 
 type augmentedRule struct {
@@ -12,13 +12,13 @@ type augmentedRule struct {
 	position int
 }
 
-func NewAugmentedRule(r *grammar.Rule, position int) *augmentedRule {
+func NewAugmentedRule(r *grammar.Rule, position int) augmentedRule {
 	//skip any epsilons
-	for position < len(r.SententialForm) && *r.SententialForm[position] == grammar.Epsilon {
+	for position < len(r.SententialForm) && r.SententialForm[position] == grammar.Epsilon {
 		position++
 	}
 	
-	return &augmentedRule{
+	return augmentedRule{
 		Rule:     r,
 		position: position,
 	}
@@ -27,10 +27,10 @@ func NewAugmentedRule(r *grammar.Rule, position int) *augmentedRule {
 /*
 Returns the next symbol (symbol to right of position) in an augmented rule or nil if there is no next symbol
 */
-func (ar augmentedRule) getNextSymbol() *grammar.Symbol {
+func (ar augmentedRule) getNextSymbol() grammar.Symbol {
 	//Note: position should NOT be more than len(sententialForm)
 	if ar.position == len(ar.SententialForm) {
-		return nil
+		return grammar.Epsilon
 	}
 	return ar.SententialForm[ar.position]
 }
@@ -64,3 +64,11 @@ func (ar augmentedRule) StringWithLookahead(lookahead utils.Set[grammar.Symbol],
 
 	return fmt.Sprintf("%-*s%v", minSpacing, rule, utils.MapToSetString(lookahead))
 }
+
+// func (ar augmentedRule) Hash() int {
+// 	return ar.Rule.Hash() + ar.position
+// }
+
+// func (ar augmentedRule) Equal(other augmentedRule) bool {
+// 	return reflect.DeepEqual(ar, other)
+// }

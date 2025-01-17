@@ -38,15 +38,15 @@ func (s Symbol) Equal(other Symbol) bool {
 	return reflect.DeepEqual(s, other)
 }
 
-func NewNonTerm(name string) *Symbol {
-	return &Symbol{
+func NewNonTerm(name string) Symbol {
+	return Symbol{
 		SymbolType: NonTermSymbol,
 		Name:       name,
 	}
 }
 
-func NewToken(name string) *Symbol {
-	return &Symbol{
+func NewToken(name string) Symbol {
+	return Symbol{
 		SymbolType: TokenSymbol,
 		Name:       name,
 	}

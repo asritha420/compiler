@@ -8,11 +8,11 @@ import (
 
 type Rule struct {
 	NonTerm        string
-	SententialForm []*Symbol
+	SententialForm []Symbol
 }
 
-func NewRule(nonTerm string, sententialForm ...*Symbol) *Rule {
-	return &Rule{
+func NewRule(nonTerm string, sententialForm ...Symbol) Rule {
+	return Rule{
 		NonTerm:        nonTerm,
 		SententialForm: sententialForm,
 	}
@@ -24,7 +24,7 @@ Returns the length of the sentential form not including epsilons
 func (r Rule) Len() int {
 	len := 0
 	for _, s := range r.SententialForm {
-		if *s != Epsilon {
+		if s != Epsilon {
 			len++
 		}
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 type Grammar struct {
-	Rules []*Rule
+	Rules []Rule
 
 	FirstRule  *Rule
 	RuleNTMap  map[string][]*Rule
@@ -13,10 +13,10 @@ type Grammar struct {
 	FollowSets map[string]utils.Set[Symbol]
 }
 
-func NewGrammar(rules ...*Rule) *Grammar {
+func NewGrammar(rules ...Rule) *Grammar {
 	g := &Grammar{
 		Rules:      rules,
-		FirstRule:  rules[0],
+		FirstRule:  &rules[0],
 		FirstSets:  make(map[string]utils.Set[Symbol]),
 		FollowSets: make(map[string]utils.Set[Symbol]),
 		RuleNTMap:  make(map[string][]*Rule),
@@ -30,17 +30,17 @@ func NewGrammar(rules ...*Rule) *Grammar {
 }
 
 func (g *Grammar) initializeSets() {
-	for _, r := range g.Rules {
+	for i, r := range g.Rules {
 		if _, ok := g.FirstSets[r.NonTerm]; !ok {
 			g.FirstSets[r.NonTerm] = make(utils.Set[Symbol])
 			g.FollowSets[r.NonTerm] = make(utils.Set[Symbol])
 			g.RuleNTMap[r.NonTerm] = make([]*Rule, 0)
 		}
-		g.RuleNTMap[r.NonTerm] = append(g.RuleNTMap[r.NonTerm], r)
+		g.RuleNTMap[r.NonTerm] = append(g.RuleNTMap[r.NonTerm], &g.Rules[i])
 	}
 }
 
-func (g *Grammar) GenerateFirstSet(sententialForm ...*Symbol) utils.Set[Symbol] {
+func (g Grammar) GenerateFirstSet(sententialForm ...Symbol) utils.Set[Symbol] {
 	firstSet := make(utils.Set[Symbol])
 	sententialFormIdx := 0
 sententialLoop:
@@ -60,7 +60,7 @@ sententialLoop:
 			break sententialLoop
 
 		case TokenSymbol:
-			firstSet[*symbol] = struct{}{}
+			firstSet[symbol] = struct{}{}
 			break sententialLoop
 
 		case NonTermSymbol:

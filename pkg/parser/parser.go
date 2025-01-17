@@ -56,8 +56,8 @@ func NewParser(g *grammar.Grammar, useLALR bool) *parser {
 	return p
 }
 
-func (p parser) makeTables() {
-	endAR := *NewAugmentedRule(p.FirstRule, len(p.FirstRule.SententialForm))
+func (p *parser) makeTables() {
+	endAR := NewAugmentedRule(p.FirstRule, len(p.FirstRule.SententialForm))
 
 	for _, s := range p.states {
 		p.gotoTable[s] = make(map[string]*lrAutomationState)
@@ -65,7 +65,7 @@ func (p parser) makeTables() {
 
 		for ar, lookahead := range s.arLookaheadMap {
 			nextSymbol := ar.getNextSymbol()
-			if nextSymbol == nil {
+			if nextSymbol == grammar.Epsilon {
 				for symbol := range lookahead {
 					p.actionTable[s][symbol] = newReduce(ar.Rule)
 				}
@@ -76,12 +76,12 @@ func (p parser) makeTables() {
 			}
 
 			if nextSymbol.SymbolType == grammar.TokenSymbol {
-				p.actionTable[s][*nextSymbol] = newShift(s.transitions[*nextSymbol])
+				p.actionTable[s][nextSymbol] = newShift(s.transitions[nextSymbol])
 				continue
 			}
 
 			if nextSymbol.SymbolType == grammar.NonTermSymbol {
-				p.gotoTable[s][nextSymbol.Name] = s.transitions[*nextSymbol]
+				p.gotoTable[s][nextSymbol.Name] = s.transitions[nextSymbol]
 			}
 
 			// other symbol types should not appear but if they do don't do anything
@@ -101,7 +101,7 @@ func (p parser) Parse(input []scanner.Token) (ParseTreeNode, error) {
 			firstInputSymbol = grammar.EndOfInput
 		} else {
 			firstInput = input[0]
-			firstInputSymbol = *grammar.NewToken(firstInput.Name)
+			firstInputSymbol = grammar.NewToken(firstInput.Name)
 		}
 
 		nextAction, ok := p.actionTable[stackTop][firstInputSymbol]
