@@ -15,7 +15,7 @@ type regexParser struct {
 //	return rp.regex[rp.curr]
 //}
 
-// is this called?
+// add comment
 func (rp *regexParser) putBackToken() {
 	rp.curr--
 }
@@ -184,10 +184,10 @@ func (rp *regexParser) parseCharRange() (Node, error) {
 
 // CharRangeBody -> "^"? (CharRangeAtom)+
 func (rp *regexParser) parseCharRangeBody() (Node, error) {
-	isNot := false
+	negate := false
 
 	if rp.consumeIf('^') {
-		isNot = true
+		negate = true
 	}
 
 	node, err := rp.parseCharRangeAtom() // must consume CharRangeAtom at least once
@@ -203,7 +203,7 @@ func (rp *regexParser) parseCharRangeBody() (Node, error) {
 		node = NewAlternationNode(node, nextCharRangeAtom) // TODO: does this make sense?, should this be jsut concateanted of the CharacterClassNodes?
 	}
 
-	if !isNot { // if its true
+	if !negate { // if its true
 		return node, nil
 	}
 

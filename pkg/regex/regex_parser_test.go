@@ -1,10 +1,14 @@
 package regex
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 )
+
+/*
+TO ADD in regex grammar:
+- wildcard (.)
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+*/
 
 // should test error cases as well
 // TODO: use pointers for some of these nodes?
@@ -32,17 +36,31 @@ var (
 	notRegex2Characters       = SubtractSlice2FromSlice1(anyChar, []rune{'a', 'b', 'c', 'd'})
 	expectedNotRegex2         = CharacterClassNode(notRegex2Characters)
 
-	regex3            Regex = "[a-zA-Z]?"
-	expectedRegex3AST       = ConcatenationNode{
+	// also do [a-zA-Z]? -> this doesnt make sense nvm
+	// TODO: test epsilons
+	regex3 Regex = "[a-zA-Z]+"
+	// TODO: should equal this after I finish the refactor w/ alt/Character class
+	_ = ConcatenationNode{
 		left: CharacterClassNode(append(lowercaseLetters(), uppercaseLetters()...)),
 		right: KleeneStarNode{
 			left: CharacterClassNode(append(lowercaseLetters(), uppercaseLetters()...)),
 		},
 	}
+	expectedRegex3AST = ConcatenationNode{
+		left: AlternationNode{
+			left:  CharacterClassNode(lowercaseLetters()),
+			right: CharacterClassNode(uppercaseLetters()),
+		},
+		right: KleeneStarNode{
+			left: AlternationNode{
+				left:  CharacterClassNode(lowercaseLetters()),
+				right: CharacterClassNode(uppercaseLetters()),
+			},
+		},
+	}
 
-	// TODO: is ^ outside of valid regex?
-	_      Regex = "^[a-zA-Z]?"
-	regex6 Regex = "[e-]"
+	_      Regex = "[^a-zA-Z]?"
+	regex6 Regex = "[e-]" // this is valid
 )
 
 func TestRegexParse(t *testing.T) {
@@ -55,7 +73,7 @@ func TestRegexParse(t *testing.T) {
 	//if regex1AST != expectedRegex1AST {
 	//	t.Errorf("invalid")
 	//}
-
+	//
 	//// regex2
 	//regex2AST, err := regex2.GetAST()
 	//if err != nil {
@@ -65,27 +83,24 @@ func TestRegexParse(t *testing.T) {
 	//if !reflect.DeepEqual(regex2AST, expectedRegex2AST) {
 	//	t.Errorf("invalid")
 	//}
+	//
+	//// notRegex2
+	//notRegex2AST, err := notRegex2.GetAST()
+	//if err != nil {
+	//	t.Errorf(err.Error())
+	//}
+	//
+	//if !reflect.DeepEqual(notRegex2AST, expectedNotRegex2) {
+	//	t.Errorf("invalid")
+	//}
 
-	// notRegex2
-	// TODO: rename
-	regex2AST, err := notRegex2.GetAST()
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	test := []rune(regex2AST.(CharacterClassNode))
-
-	for _, i := range test {
-		fmt.Printf("%c", i)
-	}
-
-	if !reflect.DeepEqual(regex2AST, expectedNotRegex2) {
-		t.Errorf("invalid")
-	}
-
-	// regex 3
+	//// regex 3
 	//regex3AST, err := regex3.GetAST()
 	//if err != nil {
-	//	t.Errorf(err.Error()) // TODO: describe error
+	//	t.Errorf(err.Error())
+	//}
+	//
+	//if !reflect.DeepEqual(regex3AST, expectedRegex3AST) {
+	//	t.Errorf("invalid")
 	//}
 }

@@ -38,6 +38,7 @@ func NewConcatenationNode(left Node, right Node) ConcatenationNode {
 	}
 }
 
+// Kleene start should not be a struct (it just has one field) TODO
 type KleeneStarNode struct {
 	left Node
 }

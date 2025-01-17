@@ -21,6 +21,7 @@ var (
 	}
 )
 
+// TODO: make it actually unicode support ranges
 func digits() []rune {
 	digits := make([]rune, 10)
 
